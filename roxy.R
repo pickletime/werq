@@ -14,6 +14,7 @@ setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/1") #huge archive of
 setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/feb") #feb 18 reads
 setwd("//us-kraken/kraken/Plate reader archive/2017/09/22/1") #looking at shifting
 setwd("//us-kraken/kraken/Plate reader archive/2017/09/28/1") #more shifting
+setwd("//us-kraken/kraken/Plate reader archive/2018/04/03/1") #more shifting
 
 #new set:
 #setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/badates/13/1") #dublin 3/13
@@ -23,7 +24,7 @@ setwd("//us-kraken/kraken/Plate reader archive/2017/09/28/1") #more shifting
 #setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/badates/20/1") #dublin 3/20
 #setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/badates/21/1") #dublin 3/21
 #setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/badates/22/1") #dublin 3/22
-setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/badates/26/1") #dublin 3/26
+#setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/badates/26/1") #dublin 3/26
 
 
 max.cutoff <- 100000
@@ -31,7 +32,6 @@ min.cutoff <- 10
 
 
 test.file <- list.files()
-#test.file <- test.file[1:250]
 input.vector <- test.file
 depth <- length(input.vector)
 ROX.array <- array(NA, dim=c(16,24, depth))
@@ -144,4 +144,6 @@ head(cutoffs, 5)
 tail(cutoffs, 5)
 min.cutoff <- cutoffs[2]
 max.cutoff <- cutoffs[length(cutoffs)-2]
+
+
 

@@ -10,13 +10,10 @@ library("ParallelStructure")
 
 #enterables:
 
-#dir1 <- "S:/Data Analysis/Newport rush/2018/01 Jan/01-15-18/dt"
-#dir1 <- "S:/Data Analysis/Performance Food Group/Aurora/2018/01 Jan/dt"
-dir1 <- "S:/Data Analysis/Performance Food Group/Aurora/misc/test"
+dir1 <- "S:/Data Analysis/Performance Food Group/Aurora/misc/test/asdf"
 #paste filepath, replace backslash with forward slash
 setwd(dir1); getwd(); 
-#filename <- "aur ang jan 18"
-filename <- "test"
+filename <- "big ol' testy"
 initials <- "dt" 
 vers <- 1.0 
 #DT in use - it's much smarter now - picking out panel and formating based on that. 
@@ -53,11 +50,13 @@ if(df.length == 100) {
   refpop <- read.table(ref.filepath, sep = "", header = F)
 }
 
+
 #various parameters
 fail <- 33 #failure cutoff. this won't change, but hardcoding is for squares.
 params.burnin <- 20000 
 params.ngens <- 50000
 fudge <- 1.085
+#this is ONLY for trying to cheat the system. that's it. no real practical usage.
 final.file <- rbind(data.file, refpop)
 npops<-c("1,2,99")
 
@@ -68,11 +67,11 @@ structure_list <- t(structure_list)
 ind2 <- nrow(final.file)
 loci2 <- (ncol(final.file)-4)/2
 
-write.table((structure_list), file = "./R/joblist2.txt", row.names = F, col.names = F, quote = F, se = " ")
+write.table((structure_list), file = "./R/joblist1.txt", row.names = F, col.names = F, quote = F, se = " ")
 write.table(final.file, file  = "./R/data.txt", row.names = F, col.names = F, quote = F, se = " ")
 
 structure.filepath <-  "C:/Users/dtaylor.IDENTIGENIRL/Documents/R/TEST/"
-joblist.filepath   <-  './R/joblist2.txt'
+joblist.filepath   <-  './R/joblist1.txt'
 infile.filepath    <-  './R/data.txt'
 output.filepath    <-  './R/structure_results'
 
@@ -84,11 +83,14 @@ parallel_structure(structure_path = structure.filepath,
                    noadmix = 0, linkag = 0, inferalph = 1, alpha = 1, popalphas = 0, unifprioralpha = 1, alphamax = 10, 
                    alphapropsd = 0.025, freqscorr = 0, lambda = 1, computeprob = 1, pfromflagonly = 1, ancestdist = 1, 
                    startatpopinfo = 0, metrofreq = 10, updatefreq = 1, randomize = 1)
+#until this permits usage of: confidence intervals, gensback, migrprior, and probably something else this isn't usable. GITGUDSCRUB
 
-output.file <- fread("./R/structure_resultsresults_job_Job1_f", skip = (58 + nrow(refpop)), header = F, sep = c(" "))
+output.raw <- fread("./R/structure_resultsresults_job_Job1_f", skip = (58 + nrow(refpop)), header = F, sep = c(" "))
+output.file <- output.raw
 
 
 #cleaning
+output.file$V4 <- rep(99,length(output.file$V4)) #this is only there because i hate seeing pop 3, even if it's technically correct.
 output.file <- output.file[,c(-1,-5)]
 output.file$V3 <- sub("\\(","",output.file$V3)
 output.file$V3 <- sub("\\)","",output.file$V3)
@@ -128,7 +130,7 @@ table(output.file$Result)
 #file naming. This will DEFINITELY change.
 SysDa <- as.character((Sys.Date()))
 filename <- paste("Results", filename)
-output_a <- paste(filename,initials,vers, SysDa, sep = "-"); 
+output_a <- paste(SysDa, vers, initials, filename, sep = "-"); 
 output_a <- paste(output_a, ".csv", sep = "")
 #setwd("./R")
 write.csv(output.file,file = output_a, row.names = F)

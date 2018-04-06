@@ -49,5 +49,4 @@ readreader(filenames[193])
 
 source("L:/DT/R/aurKSconsol.R")
 wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/03 March"
-
 aurKSconsol(wd)

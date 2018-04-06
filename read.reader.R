@@ -2,25 +2,19 @@
 #DT
 #2018-03-01
 
-#read in file(s)
-setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader")
-test.file <- list.files()
-test.file <- test.file[3]
-# 
-# read.csv(test.file)
 
 readreader <- function(test.file){
   #pull in distinct tables
   to.format.FAM <- read.csv(test.file, skip = 7, nrows = 16)
     format.FAM <- stack(to.format.FAM)
-  to.format.VIC <- read.csv(test.file, skip = 26, nrows = 16)
-    format.VIC <- stack(to.format.VIC)
+  to.format.YY <- read.csv(test.file, skip = 26, nrows = 16)
+    format.YY <- stack(to.format.YY)
   to.format.ROX <- read.csv(test.file, skip = 45, nrows = 16)
     format.ROX <- stack(to.format.ROX)
 
   #format x, y
   formatted.X <- format.FAM[1:384,1]/format.ROX[1:384,1]
-  formatted.Y <- format.VIC[1:384,1]/format.ROX[1:384,1]
+  formatted.Y <- format.YY[1:384,1]/format.ROX[1:384,1]
   
   final <- cbind(formatted.X,formatted.Y)
   names(final) <- c("ecks", "why?")
