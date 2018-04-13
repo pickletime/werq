@@ -26,6 +26,10 @@ tech.initials <- "dt"
 fplKS(killsheet.filenames[22], tech.initials)
 
 #aur 5:18
+setwd("./Originals")
+file.list <- list.files()
+file.list <- file.list[1]
+auroraKS(file.list)
 
 for (i in 1:length(killsheet.filenames)){auroraKS(killsheet.filenames[i])}
 #fpl the loop isn't working idkwhy
@@ -41,12 +45,12 @@ setwd("//us-kraken/kraken/Plate reader archive/2018/02/27/1"); getwd()
 
 filenames <- list.files()
 source("L:/DT/R/read.reader.R")
-for(i in 1:length(filenames)){readreader(filenames[i]); print(i)}
+for(i in 1:(length(filenames)-1)){readreader(filenames[i]); print(i)}
 readreader(filenames[193])
 
 
 ####aurKSconsol
 
 source("L:/DT/R/aurKSconsol.R")
-wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/03 March"
-aurKSconsol(wd)
+wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/01 January"
+aurKSconsol(wd, month = "01 Jan")

@@ -20,15 +20,13 @@ readreader <- function(test.file){
   names(final) <- c("ecks", "why?")
   
   # plot(final)
-  # #i'm not sure why i'm doing this or what i'm trying to get out of it  
-  # asdf <- 2
-  # kmeans(final, centers = asdf, iter.max = 100, nstart = 1)$betweenss/asdf
-  # # plot(final, col = abc$cluster)
+  abc <- kmeans(final, centers = 3, iter.max = 100, nstart = 1)
+  #plot(final, col = abc$cluster)
   
   file <- sub(".csv", "", test.file)
   output_a <- paste(file, ".png", sep = "")
   png(filename = output_a)
-  plot(final, ylab = "", xlab = "", main = file)
+  plot(final, ylab = "", xlab = "", main = file, col = abc$cluster)
   dev.off()
 }
 

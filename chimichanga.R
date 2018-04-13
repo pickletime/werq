@@ -29,27 +29,15 @@ depth <- length(input.vector)
 ROX.array <- array(NA, dim=c(16,24, depth))
 ROX.mean <- array(NA, dim=c(16, 24))
 ROX.sd <- array(NA, dim=c(16, 24))
-#weight.ROX.mean <- vector(length = depth)
-#weight.ROX.sd <- vector(length = depth)
-# ROX.row.mean <- array(NA, dim=c(24, 16))
-# ROX.row.sd <- array(NA, dim=c(24, 16))
 #FAM
 FAM.array <- array(NA, dim=c(16,24, depth))
 FAM.mean <- array(NA, dim=c(16, 24))
 FAM.sd <- array(NA, dim=c(16, 24))
-#weight.FAM.mean <- vector(length = depth)
-#weight.FAM.sd <- vector(length = depth)
-# FAM.row.mean <- array(NA, dim=c(24, 16))
-# FAM.row.sd <- array(NA, dim=c(24, 16))
 #YY
 YY.array <- array(NA, dim=c(16,24, depth))
 YY.mean <- array(NA, dim=c(16, 24))
 YY.sd <- array(NA, dim=c(16, 24))
-# weight.YY.mean <- vector(length = depth)
-# weight.YY.sd <- vector(length = depth)
-# YY.row.mean <- array(NA, dim=c(24, 16))
-# YY.row.sd <- array(NA, dim=c(24, 16))
-#still worthwhile i promise
+
 par(mar = c(1, 1, 1, 1))
 
 
@@ -83,14 +71,9 @@ for(i in 1:depth){
   if(depth > 1){print(100*(1-((length(input.vector) - i)/length(input.vector))))}
 }
 
-#big loop for pulling out NA in big arrays, mean-ing/sd-ing
+#big loop mean-ing/sd-ing
 for(i in 1:16){ #rows
   for(j in 1:24){ #cols
-    # for(k in 1:length(input.vector)){
-    #   if(is.na(ROX.array[i,j,k])){ROX.array[i,j,k] <- mean(ROX.array[i,j,])}
-    #   if(is.na(FAM.array[i,j,k])){FAM.array[i,j,k] <- mean(FAM.array[i,j,])}
-    #   if(is.na(YY.array[i,j,k])){YY.array[i,j,k] <- mean(YY.array[i,j,])}
-    # }   #I can't get this shit to work - it doesn't matter, but it's bothering me.
     #ROX
     ROX.mean[i,j] <- mean(ROX.array[i,j,], na.rm = T)
     ROX.sd[i,j] <- sd(ROX.array[i,j,], na.rm = T)
@@ -100,12 +83,19 @@ for(i in 1:16){ #rows
     #YY
     YY.mean[i,j] <- mean(YY.array[i,j,], na.rm = T)
     YY.sd[i,j] <- sd(YY.array[i,j,], na.rm = T)
-    }
-print(i)
+  }
 }
 
-
-ROX.array[is.na(ROX.array[,,1])] <- 1
+#REPLACING NA IT'S FINALLY HAPPENED I'M AMAZING
+for(i in 1:length(input.vector)){
+  for(j in 1:24){
+    for(k in 1:16){
+      if(is.na(ROX.array[k,j,i])){ROX.array[k,j,i] <- ROX.mean[k,j]}
+      if(is.na(FAM.array[k,j,i])){FAM.array[k,j,i] <- FAM.mean[k,j]}
+      if(is.na(YY.array[k,j,i])){YY.array[k,j,i] <- YY.mean[k,j]}
+    }
+  }
+}
 
 sum(is.na(ROX.array))
 sum(is.na(FAM.array))
@@ -145,35 +135,13 @@ YY.sd.norm <- YY.sd/mean(YY.sd); YY.mean.norm <- YY.mean/mean(YY.mean); YY.sd.mi
 
 
 
-# #"weighting"
-# #???if i do abs(rox.array[,,i] - rox.mean) then sum those i think it'll give me an approximation of what i'm looking for
-# for(i in 1:depth){
-#   weight.ROX.mean[i] <- as.numeric(sum(abs(ROX.mean - ROX.array[,,i]), na.rm = T))/mean(ROX.mean)
-#   #  weight.ROX.sd[i] <- sum(sd(ROX.array[,,i]/sd(ROX.array)))
-# }
-# test.file <- array(NA, dim=c(depth,3))
-# test.file[,2] <- input.vector
-# test.file[,3] <- as.numeric(weight.ROX.mean)
-# test.file[,1] <- seq(1, depth, by = 1)
-# 
-# abc <- test.file[order(as.numeric(test.file[,3]), decreasing = T),]
-# head(abc)
-# 
-# ROX.array[,,as.numeric(abc[1,1])]
-# #mean(ROX.array[,,as.numeric(abc[1,1])], na.rm = T)
-
-#plotting
-#dev.off()
-#ROX
 par(mar = c(1, 1, 1, 1))
-par(mfrow=c(2,1))
-boxplot(ROX.sd.norm, ylab = "sd/mean(sd)", xlab = "column index", main = "ROX sd by col", col = "red")
+par(mfrow=c(3,1))
+#ROX
 boxplot(ROX.mean.norm, ylab = "avg rox", xlab = "column index", main = "avg ROX by col", col = "red")
 #FAM
-boxplot(FAM.sd.norm, ylab = "sd/mean(sd)", xlab = "column index", main = "FAM sd by col", col = "green")
 boxplot(FAM.mean.norm, ylab = "avg FAM", xlab = "column index", main = "avg FAM by col", col = "green")
 #YY
-boxplot(YY.sd.norm, ylab = "sd/mean(sd)", xlab = "column index", main = "YY sd by col", col = "blue")
 boxplot(YY.mean.norm, ylab = "avg YY", xlab = "column index", main = "avg YY by col", col = "blue")
 
 
@@ -183,21 +151,21 @@ boxplot(YY.mean.norm, ylab = "avg YY", xlab = "column index", main = "avg YY by 
 #adaptive?
 par(mar = c(1, 1, 1, 1))
 par(mfrow = c(3,1))
-cutoffs.ROX <- quantile(ROX.array, probs = seq(0, 1, .002), na.rm = T)
-cutoffs.FAM <- quantile(FAM.array, probs = seq(0, 1, .002), na.rm = T)
-cutoffs.YY <- quantile(YY.array, probs = seq(0, 1, .002), na.rm = T)
+cutoffs.ROX <- quantile(ROX.array, probs = seq(0, 1, .01), na.rm = T)
+cutoffs.FAM <- quantile(FAM.array, probs = seq(0, 1, .01), na.rm = T)
+cutoffs.YY <- quantile(YY.array, probs = seq(0, 1, .01), na.rm = T)
 plot(cutoffs.ROX, main = "ROX cutoffs", col = "red")
 plot(cutoffs.FAM, main = "FAM cutoffs", col = "green")
 plot(cutoffs.YY, main = "YY cutoffs", col = "blue")
 
-head(cutoffs.ROX, 15); tail(cutoffs.ROX, 5); 
-min.cutoff.ROX <- cutoffs.ROX[3]; max.cutoff.ROX <- cutoffs.ROX[length(cutoffs.ROX)-2]
+head(cutoffs.ROX, 10); tail(cutoffs.ROX, 10); 
+min.cutoff.ROX <- cutoffs.ROX[4]; max.cutoff.ROX <- cutoffs.ROX[length(cutoffs.ROX)-3]
 
-head(cutoffs.FAM, 5); tail(cutoffs.FAM, 20)
+head(cutoffs.FAM, 10); tail(cutoffs.FAM, 10)
 min.cutoff.FAM <- cutoffs.FAM[3]; max.cutoff.FAM <- cutoffs.FAM[length(cutoffs.FAM)-2]
 
-head(cutoffs.YY, 70); tail(cutoffs.YY, 5)
-min.cutoff.YY <- cutoffs.YY[4]; max.cutoff.YY <- cutoffs.YY[length(cutoffs.YY)-3]
+head(cutoffs.YY, 10); tail(cutoffs.YY, 10)
+min.cutoff.YY <- cutoffs.YY[3]; max.cutoff.YY <- cutoffs.YY[length(cutoffs.YY)-1]
 
 #removing NTC fluoro values that somehow aren't being caught by the ranges earlier
 for(i in 1:2){
@@ -209,50 +177,63 @@ for(i in 1:2){
   }
 }
 
+##building universal averages:
+  
 
-#ROX heatmapping
-par(mar = c(1, 1, 1, 1))
-resolution <- 50
-# sd.heatmap.ROX <- heatmap.2(x = ROX.sd.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-#                         cellnote = signif(ROX.sd.norm,3), notecol = "black", notecex = 0.5,
-#                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-#                         main = "heatmapping ROX sd", col = colorRampPalette(c("white", "red"))(resolution))
-
-raw.heatmap.ROX <- heatmap.2(x = ROX.mean.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-                         cellnote = signif(ROX.mean.norm,3), notecol = "black", notecex = 0.5,
-                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-                         main = "heatmapping ROX mean", col = colorRampPalette(c("red", "white"))(resolution))
-#FAM heatmapping
-# sd.heatmap.FAM <- heatmap.2(x = FAM.sd.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-#                         cellnote = signif(FAM.sd.norm,3), notecol = "black", notecex = 0.5,
-#                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-#                         main = "heatmapping FAM sd", col = colorRampPalette(c("white", "green"))(resolution))
-
-raw.heatmap.FAM <- heatmap.2(x = FAM.mean.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-                         cellnote = signif(FAM.mean.norm,3), notecol = "black", notecex = 0.5,
-                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-                         main = "heatmapping FAM mean", col = colorRampPalette(c("green", "white"))(resolution))
-#YY heatmapping
-# sd.heatmap.YY <- heatmap.2(x = YY.sd.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-#                         cellnote = signif(YY.sd.norm,3), notecol = "black", notecex = 0.5,
-#                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-#                         main = "heatmapping YY sd", col = colorRampPalette(c("white", "blue"))(resolution))
-
-raw.heatmap.YY <- heatmap.2(x = YY.mean.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-                         cellnote = signif(YY.mean.norm,3), notecol = "black", notecex = 0.5,
-                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-                         main = "heatmapping YY mean", col = colorRampPalette(c("blue", "white"))(resolution))
-
-
-
-dev.off()
+###########additional funsies
 
 
 
 
-index <- 1
+for(j in 1:20){
+  #walk through huge array by [,,j]
+  format.FAM <- as.data.frame(FAM.array[,,j])
+  format.YY <- as.data.frame(YY.array[,,j])
+  format.ROX <- as.data.frame(ROX.array[,,j])
+  
+  #comparison, stack
+  formatted.X.uncorr <- stack(format.FAM/format.ROX)
+  formatted.Y.uncorr <- stack(format.YY/format.ROX)
+  
+  #format x & y, normalize, stack
+  formatted.X <- stack(format.FAM/(format.ROX/ROX.mean.norm))
+  formatted.Y <- stack(format.YY/(format.ROX/ROX.mean.norm))
+  
+  #universal averages, stack:
+  # avg.X <- stack(as.data.frame(FAM.mean/ROX.mean))
+  # avg.Y <- stack(as.data.frame(YY.mean/ROX.mean))
+  # avg <- cbind(avg.X[1:384, 1], avg.Y[1:384, 1])
+  # plot(avg)
+  # avages <- kmeans()
+  
+    
+  to.plot <- cbind(formatted.X[1:384,1],formatted.Y[1:384,1])
+  to.plot.uncorrected <- cbind(formatted.X.uncorr[1:384,1], formatted.Y.uncorr[1:384,1])
+  
+  # I won't give up on this plotting kmeans thing not now not ever
+  par(mar = c(1, 1, 1, 1))
+  par(mfrow = c(5,2))
+  for(i in 1:5){
+    cents <- i
+    abc <- kmeans(to.plot, centers = cents, iter.max = 100000, nstart = 1000)
+    print(i); print(abc$betweenss/cents)
+    plot(to.plot, ylab = "", xlab = "", main = paste0(i, "c"), col = abc$cluster)
+    plot(to.plot.uncorrected, ylab = "", xlab = "",main = paste0(i, "uc"), col = abc$cluster)
+  }
+  print(j)
+}
+#plot(final, col = abc$cluster)
 
-#additional funsies
+
+
+
+
+
+
+
+
+
+
 getwd()
 readreader(input.vector[1])
 rox1 <- ROX.array[,,index]/ROX.mean.norm
