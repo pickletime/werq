@@ -1,7 +1,8 @@
 fplKS <- function(a, initials = "DT"){
 #obligatories
-  vers <- "v_1.1" #version tracking? idk maybe this is a thing
+  vers <- "v_1.2" #version tracking? idk maybe this is a thing
 #1.1: only prints text if necessary, but still does everything because it's supposed to.
+#1.2: it was randomly creating duplicate barcodes, so i added a test before the renumbering.
   test <- read.csv(a, header = T, blank.lines.skip = T)
   header <- c("Taken",	"SideID",	"CarcassID",	"Sample Barcode",	"Lot",	"Producer",	"Kill Date",	"Kill No",	"Back Tag",	"Ear Tag",	"Side",	"Status",	"Description",	"Username",	"Forename",	"Surname")
   
@@ -20,24 +21,28 @@ fplKS <- function(a, initials = "DT"){
     print("Sample ID dupes:");print(length(gitgud_td))
   }
   
-#id dups in Carc
-  for(i in seq_along(tg_x)){
-    testloop <- test[test$CarcassID==tg_x[i],]
-    testlooplen <- as.numeric(paste(-dim(testloop)[1]))
-    testloopvector <- as.numeric(seq(from = -1, to = testlooplen))
-    newvals <- as.numeric(paste(testloopvector,testloop$CarcassID, sep=""))
-    test$CarcassID[test$CarcassID==tg_x[i]] <- newvals
+  #rename dups in Carc ONLY IF dups exist
+  if(length(tg_x)>0) {
+    for(i in seq_along(tg_x)){
+      testloop <- test[test$Glatt..==tg_x[i],]
+      testlooplen <- as.numeric(paste(-dim(testloop)[1]))
+      testloopvector <- as.numeric(seq(from = -1, to = testlooplen))
+      newvals <- as.numeric(paste(testloopvector,testloop$Glatt.., sep=""))
+      test$Glatt..[test$Glatt..==tg_x[i]] <- newvals
+    }
   }
-#id dups in Sample.ID
-  for(i in seq_along(td_x)){
-    testloop <- test[test$Sample.Barcode==td_x[i],]
-    testlooplen <- as.numeric(paste(-dim(testloop)[1]))
-    testloopvector <- as.numeric(seq(from = -1, to = testlooplen))
-    test$Sample.Barcode[test$Sample.Barcode==td_x[i]] <- as.numeric(paste(testloopvector,testloop$Sample.Barcode, sep=""))
-  }
-  names(test) <- header
   
+  #rename dups in Sample.ID ONLY IF dups exist
+  if(length(td_x)>0){
+    for(i in seq_along(td_x)){
+      testloop <- test[test$DNA..==td_x[i],]
+      testlooplen <- as.numeric(paste(-dim(testloop)[1]))
+      testloopvector <- as.numeric(seq(from = -1, to = testlooplen))
+      test$DNA..[test$DNA..==td_x[i]] <- as.numeric(paste(testloopvector,testloop$DNA.., sep=""))
+    }
+  }
 #file naming/output
+  names(test) <- header
   SysDa <- as.character((Sys.Date()))
   a <- sub(".csv", "", a)
   output_a <- paste(a, initials,vers, SysDa, sep = "-"); 

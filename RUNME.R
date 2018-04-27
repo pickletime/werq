@@ -52,5 +52,15 @@ readreader(filenames[193])
 ####aurKSconsol
 
 source("L:/DT/R/aurKSconsol.R")
-wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/01 January"
-aurKSconsol(wd, month = "01 Jan")
+wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/05 May"
+aurKSconsol(wd, month = "05 May")
+
+
+
+###aurKS what the fuck is going on
+source("L:/DT/R/aurKS.R")
+wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/03 March/Originals/new"
+setwd(wd)
+killsheet.filenames <- list.files()
+for (i in 1:length(killsheet.filenames)){aurKS(killsheet.filenames[i])}
+

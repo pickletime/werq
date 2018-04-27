@@ -19,7 +19,7 @@ aurKSconsol <- function(directory,month = "", initials = "dt"){
   setwd("L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/consolidated killsheets")
   
   #standard naming section, minor tweaks for simplicity
-  output <- paste(month, as.character((Sys.Date())),initials, "consolidated Aurora killsheets", sep = "-"); 
+  output <- paste("Consolidated Aurora killsheets", month, as.character((Sys.Date())),initials,  sep = "-"); 
   output <- paste(output, ".csv", sep = "")
   write.csv(ongoing.file,file = output, row.names = F)
   
