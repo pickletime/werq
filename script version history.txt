@@ -1,0 +1,17 @@
+Aurora:
+1.0 - 1/8/18:
+release version. 
+1.1 - 2/26/18:
+It now only prints text if there was something to do. I could make it much faster by including everything in the loop, but i can't be bothered to so do.
+1.2 - 4/27/18
+I found that the barcode renaming was misbehaving, so i added a test before renumbering.
+
+
+
+FPL:
+1.0 - 1/8/18:
+release version. 
+1.1 - 2/23/18:
+It now only prints text if there was something to do. I could make it much faster by including everything in the loop, but i can't be bothered to so do.
+1.2 - 4/27/18
+I found that the barcode renaming was misbehaving, so i added a test before renumbering.

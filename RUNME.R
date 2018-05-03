@@ -52,9 +52,8 @@ readreader(filenames[193])
 ####aurKSconsol
 
 source("L:/DT/R/aurKSconsol.R")
-wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/05 May"
-aurKSconsol(wd, month = "05 May")
-
+wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/04 April"
+aurKSconsol(wd, month = "TEST")
 
 
 ###aurKS what the fuck is going on

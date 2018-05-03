@@ -15,13 +15,16 @@ aurKSconsol <- function(directory,month = "", initials = "dt"){
            ongoing.file <- rbind(ongoing.file, read.csv(file.list[i])))
   }
 
+  #reorg file so that it makes sense and doesn't require manipulation at the end
+  final.file <- ongoing.file[,c("DNA..", "Glatt..", "Lot..", "Breed", "Date")]
+  
   #setwd to standard consolidated location for ezaccess
   setwd("L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/consolidated killsheets")
   
   #standard naming section, minor tweaks for simplicity
   output <- paste("Consolidated Aurora killsheets", month, as.character((Sys.Date())),initials,  sep = "-"); 
   output <- paste(output, ".csv", sep = "")
-  write.csv(ongoing.file,file = output, row.names = F)
+  write.csv(final.file,file = output, row.names = F)
   
   #reset wd?
   setwd(directory)
