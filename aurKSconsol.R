@@ -16,7 +16,10 @@ aurKSconsol <- function(directory,month = "", initials = "dt"){
   }
 
   #reorg file so that it makes sense and doesn't require manipulation at the end
-  final.file <- ongoing.file[,c("DNA..", "Glatt..", "Lot..", "Breed", "Date")]
+  intermediate.file <- ongoing.file[,c("DNA..", "Glatt..", "Lot..", "Breed", "Date")]
+  
+  #pull out duplicated gladd or dna flags
+  final.file <- intermediate.file[intermediate.file$DNA..> 0 & intermediate.file$Glatt.. > 0,]
   
   #setwd to standard consolidated location for ezaccess
   setwd("L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/consolidated killsheets")

@@ -1,33 +1,24 @@
 getwd()
-setwd("S:/Data Analysis/Performance Food Group/Aurora/2018/02 Feb/dt")
-
-
+setwd("S:/Data Analysis/Performance Food Group/Aurora/2018/03 mARCH/dt")
 
 library("rJava")
 library("xlsx")
 
+#pull in file, do that grepl thing, filter out samples we wouldn't plot anyway
 xyz <- list.files()
-xyz[4]
-# abc <- read.csv(xyz[3])
-##for read.xlsx
-cba <- read.xlsx(xyz[4], sheetIndex = 1, colIndex = c(1:13))
-abc <- cba
-##hopefully the above works
-abc <- abc[abc$Result != "NO RESULT",]
+aurfile <- grepl("[A-z]urora [A-z]ngus [A-z]esults", xyz)
+cba <- read.xlsx(xyz[aurfile], sheetIndex = 1, colIndex = c(1:13))
+abc <- cba[cba$Result != "NO RESULT",]
+uci.mean <- mean(abc$UpperConfidenceValueOfAngus)
 
 
-abc$UpperConfidenceValueOfAngus <- sort(abc$UpperConfidenceValueOfAngus)
 
-#length(abc$UpperConfidenceValueOfAngus)
-hist(abc$UpperConfidenceValueOfAngus, freq = FALSE, col = "red", border = "black", breaks = seq(0,1, by = 1/20), 
-     ylab = "Percent of data within bracket", xlab = "Angus score", lwd = 0.05, bty = 'n')
-abline(v = mean(abc$UpperConfidenceValueOfAngus), col = "blue", lwd = 3)
-
+#real plotty plot
 plot(y = abc$UpperConfidenceValueOfAngus, x = 1:length(abc$UpperConfidenceValueOfAngus), 
-     type = "h", col = "red", main = "Aurora Angus values for A MONTH", 
-     ylab = "", xlab = "", xaxt = 'n',
-     lwd = 0.05, bty = 'n')
-lines(abc$UpperConfidenceValueOfAngus, col = "black")
-abline(h = mean(abc$UpperConfidenceValueOfAngus), col = "yellow", lwd = 3)
+     type = "h", col = "red", ylab = "", xlab = "", xaxt = 'n', lwd = 0.05, bty = 'n')
+lines(abc$UpperConfidenceValueOfAngus, col = "black", lwd = 1.5)
+abline(h = uci.mean, col = "yellow", lwd = 3)
+text(length(abc$SampleID)/4,0.2, signif(uci.mean, 4), col = "yellow", cex = 1, pos = 3)
+
 
 dev.off()
