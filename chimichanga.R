@@ -1,6 +1,11 @@
+#plots everything, no heatmap, quantiles, plotting + kmeans
+#this one is smarter than fluoro, but lacks the heatmapping
+
 install.packages("gplots")
 install.packages("colorRamps")
 
+library(gplots)
+library(colorRamps)
 
 setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/2") #dublin 3/21
 setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/dub.20180323/3") #dublin 3/23

@@ -1,22 +1,34 @@
-install.packages("ParallelStructure", repo = "http://R-Forge.R-project.org")
+#this project has been declared useless. Given the same seed and params I can't replicate structure's output. 
+#B A S E D L U C K
+#A
+#S
+#E
+#D
+#L
+#U
+#C
+#K
 
-library(data.table)
-library(reshape2)
-library(tidyr)
-library(dplyr)
-library(tidyselect)
-library("ParallelStructure")
+#bulk load relevant libraries
+x <- c("data.table", "reshape2","tidyr", "dplyr", "tidyselect", "devtools")
+lapply(x, require, character.only = T)
 
+install_github("pickletime/ParallelStructure_IR")
+
+#install_github("b00mir/ParallelStructure_IR")
+library(ParallelStructureIR)
 
 #enterables:
 
 dir1 <- "S:/Data Analysis/Performance Food Group/Aurora/misc/test/asdf"
+dir2 <- "S:/Data Analysis/Performance Food Group/Aurora/2018/04 April/dt"
 #paste filepath, replace backslash with forward slash
-setwd(dir1); getwd(); 
-filename <- "big ol' testy"
+setwd(dir2); getwd(); 
+filename <- "IH8U"
 initials <- "dt" 
 vers <- 1.0 
-#DT in use - it's much smarter now - picking out panel and formating based on that. 
+#1.0: it's much smarter now - picking out panel and formating based on that. 
+#minor touchups for now. At some point i'll edit the library, but that's a ways out.
 #I'm reasonably confident that i'm amazing.
 
 
@@ -29,7 +41,8 @@ df.length <- length(data.file)
 
 
 if(df.length < 100) {
-  ang.cutoff = 0.7
+  params.ang.cutoff = 0.7
+  # params.ancestpint = 0.95
   ref.filepath <- "S:/Data Analysis/Performance Food Group/Aurora/2014/MB40 Reference Panel 190214.txt"
   if(!dir.exists("./R")) {dir.create("./R")}
   refpop <- read.table(ref.filepath, sep = "", header = F)
@@ -44,7 +57,8 @@ if(df.length < 100) {
   #subsetting out those shitty branded samples
 }
 if(df.length == 100) {
-  ang.cutoff = 0.5
+  params.ang.cutoff = 0.5
+  # params.ancestpint = 0.975
   ref.filepath <- "S:/Data Analysis/Newport rush/CB48 Angus Reference Panel 112315.txt"
   if(!dir.exists("./R")) {dir.create("./R")}
   refpop <- read.table(ref.filepath, sep = "", header = F)
@@ -52,11 +66,10 @@ if(df.length == 100) {
 
 
 #various parameters
-fail <- 33 #failure cutoff. this won't change, but hardcoding is for squares.
+fail <- 33 #failure cutoff. this won't change, but i wanted it hardcoded.
 params.burnin <- 20000 
 params.ngens <- 50000
-fudge <- 1.085
-#this is ONLY for trying to cheat the system. that's it. no real practical usage.
+
 final.file <- rbind(data.file, refpop)
 npops<-c("1,2,99")
 
@@ -67,26 +80,69 @@ structure_list <- t(structure_list)
 ind2 <- nrow(final.file)
 loci2 <- (ncol(final.file)-4)/2
 
-write.table((structure_list), file = "./R/joblist1.txt", row.names = F, col.names = F, quote = F, se = " ")
-write.table(final.file, file  = "./R/data.txt", row.names = F, col.names = F, quote = F, se = " ")
+write.table((structure_list), file = "./R/joblist1.txt", row.names = F, col.names = F, quote = F, sep = " ")
+write.table(final.file, file  = "./R/data.txt", row.names = F, col.names = F, quote = F, sep = " ")
 
 structure.filepath <-  "C:/Users/dtaylor.IDENTIGENIRL/Documents/R/TEST/"
 joblist.filepath   <-  './R/joblist1.txt'
 infile.filepath    <-  './R/data.txt'
 output.filepath    <-  './R/structure_results'
 
-parallel_structure(structure_path = structure.filepath,  
-                   joblist = joblist.filepath, n_cp = 1, infile = infile.filepath, 
-                   outpat = output.filepath, numind = ind2, numloc = loci2, printqha = 0, onerowperind = 1, popdata = 1, 
-                   popflag = 1, plot_output = 0, usepopinfo = 1, missing = 0, ploid = 2, locdat = 0, phenotypes = 0, 
-                   markernames = 0, mapdist = 0, label = 1, phaseinfo = 0, phased = 0, recessivealleles = 0, extracol = 1, 
-                   noadmix = 0, linkag = 0, inferalph = 1, alpha = 1, popalphas = 0, unifprioralpha = 1, alphamax = 10, 
-                   alphapropsd = 0.025, freqscorr = 0, lambda = 1, computeprob = 1, pfromflagonly = 1, ancestdist = 1, 
-                   startatpopinfo = 0, metrofreq = 10, updatefreq = 1, randomize = 1)
-#until this permits usage of: confidence intervals, gensback, migrprior, and probably something else this isn't usable. GITGUDSCRUB
+parallel_structure(
+    structure_path = structure.filepath,  #filepath to struc
+    joblist = joblist.filepath,           #filepath to joblist, outputted earlier
+    n_cpu = 1,                            #number of cpu used, this could be fun to play with?
+    infile = infile.filepath,             #filepath to data, output earlier
+    outpath = output.filepath,            #filepath to structure results, from earlier
+    numinds = ind2,                       #number of individuals, pulled from datafile
+    numloci = loci2,                      #number of loci, pulled from datafile
+    printqhat = 0,                        #
+    onerowperind = 1,                     #one row per ind, 1 = yes
+    popdata = 1,                          #
+    popflag = 1,                          #
+    plot_output = 0,                      #
+    usepopinfo = 1,                       #
+    missing = 0,                          #
+    ploidy = 2,                           #
+    locdata = 0,                          #
+    phenotypes = 0,                       #
+    markernames = 0,                      #
+    mapdist = 0,                          #
+    label = 1,                            #
+    phaseinfo = 0,                        #
+    phased = 0,                           #
+    recessivealleles = 0,                 #
+    extracol = 1,                         #
+    noadmix = 0,                          #
+    linkage = 0,                          #
+    inferalpha = 1,                       #
+    alpha = 1,                            #
+    popalphas = 0,                        #
+    unifprioralpha = 1,                   #
+    alphamax = 10,                        #
+    alphapropsd = 0.025,                  #
+    freqscorr = 0,                        #
+    fpriormean = 0.1,                     #new version of lib set this to default, unnecessary now
+    fpriorsd = 0.1,                       #new version of lib set this to default, unnecessary now
+    lambda = 1,                           #
+    computeprob = 1,                      #
+    pfromflagonly = 1,                    #
+    ancestdist = 1,                       #
+    startatpopinfo = 0,                   #
+    metrofreq = 10,                       #
+    updatefreq = 1,                       #
+    randomize = 1,                        #
+    gensback = 10,                        #
+    migrprior = 0.005,                    #
+    ancestpint = 0.95)                    #
+
+
+
 
 output.raw <- fread("./R/structure_resultsresults_job_Job1_f", skip = (58 + nrow(refpop)), header = F, sep = c(" "))
 output.file <- output.raw
+
+gitfucked <- output.file
 
 
 #cleaning
@@ -107,24 +163,12 @@ colnames(output.file) <- c("SampleID",	"%FailedMarkers",	"Pop",	"ProportionOfAng
                            "ProportionOfNonAngus",	"LowerConfidenceValueOfAngus",	"UpperConfidenceValueOfAngus",	
                            "LowerConfidenceValueOfNonAngus",	"UpperConfidenceValueOfNonAngus")
 
-#fix the UCI angus values?
-#output.file$UpperConfidenceValueOfAngus <- as.double(output.file$UpperConfidenceValueOfAngus)
-#output.file$UpperConfidenceValueOfAngus <- transform(output.file$UpperConfidenceValueOfAngus * fudge)
-#THIS IS CHEATING DIRTY ROTTEN CHEATING
-
 #result assignment
 output.file$Result <- "NO RESULT"
-output.file$Result[output.file$UpperConfidenceValueOfAngus > ang.cutoff & output.file$`%FailedMarkers` < fail] <- "PASS"
-output.file$Result[output.file$UpperConfidenceValueOfAngus <= ang.cutoff & output.file$`%FailedMarkers` < fail] <- "FAIL"
+output.file$Result[output.file$UpperConfidenceValueOfAngus > params.ang.cutoff & output.file$`%FailedMarkers` < fail] <- "PASS"
+output.file$Result[output.file$UpperConfidenceValueOfAngus <= params.ang.cutoff & output.file$`%FailedMarkers` < fail] <- "FAIL"
 
 table(output.file$Result)
-#output.table.1 <- table(output.file$Result); output.table.1
-#output.table.2 <- table(output.file$Result); output.table.2
-#output.table.3 <- table(output.file$Result); output.table.3
-#output.table.4 <- table(output.file$Result); output.table.4
-
-
-#output.table; output.table.1; output.table.2; output.table.3; output.table.4 
 
 
 #file naming. This will DEFINITELY change.

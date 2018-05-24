@@ -1,4 +1,5 @@
 auroraKS <- function(a, initials = "DT"){
+#rename duplicate samples across the two potential fields for duplication for killsheets
 #obligatories
   vers <- "v_1.2" #version tracking? idk maybe this is a thing
 #1.1: only prints text if necessary, but still does everything because it's supposed to.

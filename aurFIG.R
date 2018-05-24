@@ -1,3 +1,5 @@
+#various different discrete functions to recreate the aurora angus figure
+
 getwd()
 setwd("S:/Data Analysis/Performance Food Group/Aurora/2018/03 mARCH/dt")
 

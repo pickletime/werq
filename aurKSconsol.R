@@ -1,12 +1,14 @@
 
-aurKSconsol <- function(directory,month = "", initials = "dt"){
+aurKSconsol <- function(directory, month = "", initials = "dt"){
+  #function to consolidate aur killsheets for the monthly angus report, only uses samples that are to be reported
   
   #set dir
   setwd(directory)
   
-  #only look at actual killsheets, ignore anything OBVIOUSLY not a killsheet  
+  #only look at actual killsheets, ignore anything OBVIOUSLY not a killsheet
+  #DAT GREPL THO TALKABOUT OVERKILL EH EH EH EH EH
   file.list <- list.files()
-  file.list <- file.list[grepl("AUR", file.list)]
+  file.list <- file.list[grepl("AUR[0-9]{8}", file.list)]
   
   #paste all killsheet together, treating i = 1 as special because of course
   for(i in 1:length(file.list)){

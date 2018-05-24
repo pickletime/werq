@@ -20,16 +20,6 @@ source("L:/DT/R/fplKS.R")
 source("L:/DT/R/read.reader.R")
 
 
-killsheet.filenames <- c("ezmode.csv", "ezmode1.csv", "ezmode2.csv", "ezmode3.csv", "ezmode4.csv", "ezmode5.csv", "ezmode6.csv", "ezmode7.csv", "ezmode8.csv", "ezmode9.csv", "ezmode10.csv", "ezmode11.csv", "ezmode12.csv")
-tech.initials <- "dt"
-
-fplKS(killsheet.filenames[22], tech.initials)
-
-#aur 5:18
-setwd("./Originals")
-file.list <- list.files()
-file.list <- file.list[1]
-auroraKS(file.list)
 
 for (i in 1:length(killsheet.filenames)){auroraKS(killsheet.filenames[i])}
 #fpl the loop isn't working idkwhy
@@ -52,8 +42,8 @@ readreader(filenames[193])
 ####aurKSconsol
 
 source("L:/DT/R/aurKSconsol.R")
-wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/04 April"
-aurKSconsol(wd, month = "TEST")
+wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/05 May/originals"
+aurKSconsol(wd, month = "TEST 02")
 
 
 ###aurKS what the fuck is going on
