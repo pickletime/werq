@@ -1,7 +1,7 @@
 #various different discrete functions to recreate the aurora angus figure
 
 getwd()
-setwd("S:/Data Analysis/Performance Food Group/Aurora/2018/03 mARCH/dt")
+setwd("S:/Data Analysis/Performance Food Group/Aurora/2018/05 May/dt")
 
 library("rJava")
 library("xlsx")
@@ -20,7 +20,8 @@ plot(y = abc$UpperConfidenceValueOfAngus, x = 1:length(abc$UpperConfidenceValueO
      type = "h", col = "red", ylab = "", xlab = "", xaxt = 'n', lwd = 0.05, bty = 'n')
 lines(abc$UpperConfidenceValueOfAngus, col = "black", lwd = 1.5)
 abline(h = uci.mean, col = "yellow", lwd = 3)
-text(length(abc$SampleID)/4,0.2, signif(uci.mean, 4), col = "yellow", cex = 1, pos = 3)
+#text(length(abc$SampleID)/4,0.4, signif(uci.mean, 4), col = "yellow", cex = 1, pos = 3)
+#this outright refuses to not look like shit. i hate it.
 
 
 dev.off()

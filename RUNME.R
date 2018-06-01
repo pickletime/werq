@@ -43,7 +43,7 @@ readreader(filenames[193])
 
 source("L:/DT/R/aurKSconsol.R")
 wd <- "L:/Sample Records/Performance Food Group/Kill Sheets/Aurora/2018/05 May/originals"
-aurKSconsol(wd, month = "TEST 02")
+aurKSconsol(wd, month = "05 May")
 
 
 ###aurKS what the fuck is going on
