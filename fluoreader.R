@@ -214,10 +214,10 @@ for(i in 1:2){
 
 #ROX heatmapping
 par(mar = c(1, 1, 1, 1))
-resolution <- 50
+resolution <- 100
 # sd.heatmap.ROX <- heatmap.2(x = ROX.sd.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
 #                         cellnote = signif(ROX.sd.norm,3), notecol = "black", notecex = 0.5,
-#                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
+#                         trace = "none", key = FALSE, xlab = "Column", ylab = "row",
 #                         main = "heatmapping ROX sd", col = colorRampPalette(c("white", "red"))(resolution))
 
 raw.heatmap.ROX <- heatmap.2(x = ROX.mean.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
