@@ -5,37 +5,73 @@
 
 
 #i'm defaulting here because this is where i'm spitting files out now
-setwd("L:/DT/R/NGF")
+setwd("L/DT/R/NGF")
 
 #pick target file(s) - NEED TO BE UNFORMATTED
 git.file <- list.files()
 for(i in 1:length(git.file)){
-  working.file <- read.csv(git.file[i], sep = ",")
+  target.file <- git.file[i]; target.file
+  #pull in whole file, filling 
+  working.file <- read.table(file = target.file, fill = T)
+  #start new df from appropriate location
+  
   ifelse(
     i < 2,
-    df.working.file <- data.frame(working.file[2:nrow(working.file),]),
-    df.working.file <- rbind(df.working.file, data.frame(working.file[2:nrow(working.file),]))
+    df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1]),
+    df.working.file <- rbind(df.working.file, data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1]))
   )
   print(dim(df.working.file))
-  print(100*(1-signif(i/length(git.file),3)))
+  print(i/length(git.file))
 }
-
-#and now the end product
-  df.final <- df.working.file
-
-  #various unique lists, just for funsies
+  #this is necessary because it's too big?
+#
+##i'm only adding this bc data
+#
+  oldwd <- getwd()
+  setwd("//us-kraken/kraken/Projects/069/013/Results")
+  big.file <- list.files()
+  big.file <- big.file[2]
+  big.working.file <- read.table(file = big.file, fill = T)
+  big.working.file <- data.frame(big.working.file[3118:nrow(big.working.file),1])
+  names(big.working.file) <- names(df.working.file)
+  df.working.file <- rbind(df.working.file,big.working.file)
+  setwd(oldwd); getwd()
+  print("big file done")
+  
+#
+##
+#
+  
+  
+  #reformat df with appropriate headers
+  df.final <- separate(data = df.working.file, col = 1, sep = "\\,",
+                     into = c("DaughterPlate","MasterPlate","MasterWell","Call","X","Y","SNPID","SubjectID",
+                              "Norm","Carrier","DaughterWell"))
+  #new kraken has another column (AliquotID) but it doesn't seem to be used?
   well.list <- sort(unique(df.final$DaughterWell))
-  snp.list <- unique(df.final$SNPID) 
+  snp.list <- unique(df.final$SNPID)
+  #this is wrong. i need to correct this for sure
   uncalled <- c("?", "NTC", "")
+  
+  
+  
+  
   raw.output.table <- matrix(data = NA, nrow = length(well.list), ncol = 4)
   
-
-#  I actually think this works now. No way it's that easy.
+  
+  #how to extract #matching whatever
+  #length(df.final$SNPID[df.final$SNPID == snp.list[1]])
+  
+  #i could just do this every time but that seems stupid. OR I COULD MAKE A 3D DF HOLY SHIT
+  #df.subset <- df.final[df.final$DaughterWell == well.list[1],]
+  
+  #length(df.subset$Call[df.subset$Call == uncalled])/length(df.subset$DaughterWell)
+  
+  #I actually think this works now. No way it's that easy.
   for(i in 1:length(well.list)){
-    loop.df.subset <- df.final[df.final$DaughterWell == well.list[i],]
-    raw.output.table[i,1] <- as.character(well.list[i])
-    raw.output.table[i,2] <- as.numeric(length(loop.df.subset$Call[loop.df.subset$Call %in% uncalled])/length(loop.df.subset$DaughterWell))
-    print(signif(100*(i/length(well.list))),3)
+  loop.df.subset <- df.final[df.final$DaughterWell == well.list[i],]
+  raw.output.table[i,1] <-well.list[i]
+  raw.output.table[i,2] <- as.numeric(length(loop.df.subset$Call[loop.df.subset$Call %in% uncalled])/length(loop.df.subset$DaughterWell))
   }
   
   #raw.output.table[,1]
@@ -63,7 +99,6 @@ for(i in 1:length(git.file)){
       ifelse(length(subset.output.table[subset.output.table[,4] == j,2]) >0 , 
            data.table[i,j] <- subset.output.table[subset.output.table[,4] == j,2], 0)
     }
-    print(100*signif(i/length(unique(data.rows))))
   }
   
   data.table[1:2,1:2] <- 0
@@ -73,7 +108,7 @@ for(i in 1:length(git.file)){
   plate.pass.rate <- heatmap.2(x = output.matrix, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
                              cellnote = signif(output.matrix,2), notecol = "black", notecex = 0.5,
                              trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-                             main = length(df.final$DaughterPlate), col = colorRampPalette(c("white", "red"))(150))
+                             main = paste("N = ",length(df.final$DaughterPlate)), col = colorRampPalette(c("white", "red"))(150))
   
   par(mar = c(1, 1, 1, 1))
   par(mfrow=c(2,1))
@@ -86,11 +121,11 @@ for(i in 1:length(git.file)){
   length(df.final$DaughterPlate)
   mean(output.matrix)
 
-  # #i could make the grid i'm dreaming of with a two nested for loops?
-  # a <- t.test(output.matrix[1:2,])
-  # a$p.value
-  # str(a)
+  #i could make the grid i'm dreaming of with a two nested for loops?
+  a <- t.test(output.matrix[1:2,])
+  a$p.value
+  str(a)
   
   #save the trimmed/neat version. also: row.names=F is heaven.
-  #write.csv(df.final[,-c(9,10)], file = paste("super bulk output", sub(".csv", "", target.file), ".csv", sep = "-"), row.names = F)
+  write.csv(df.final[,-c(9,10)], file = paste("super bulk output", sub(".csv", "", target.file), ".csv", sep = "-"), row.names = F)
 

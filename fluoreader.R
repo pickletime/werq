@@ -14,11 +14,13 @@ setwd("//us-kraken/kraken/Plate reader archive/2017/09/22/1") #looking at shifti
 setwd("//us-kraken/kraken/Plate reader archive/2017/09/28/1") #more shifting
 setwd("//us-kraken/kraken/Plate reader archive/2018/04/09/1") #more shifting
 
+setwd("//us-kraken/kraken/Plate reader archive/2018/06/19/1") #more shifting
+
 setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/testing")
 
-max.cutoff.ROX <- 150000; min.cutoff.ROX <- 500
-max.cutoff.FAM <- 150000; min.cutoff.FAM <- 500
-max.cutoff.YY <- 150000; min.cutoff.YY <- 500
+max.cutoff.ROX <- 4500; min.cutoff.ROX <- 1500
+max.cutoff.FAM <- 15000; min.cutoff.FAM <- 2500
+max.cutoff.YY <- 5000; min.cutoff.YY <- 500
 library(colorRamps)
 library(gplots)
 #initializing
@@ -88,11 +90,6 @@ for(i in 1:depth){
 #big loop for pulling out NA in big arrays, mean-ing/sd-ing
 for(i in 1:16){ #rows
   for(j in 1:24){ #cols
-    # for(k in 1:length(input.vector)){
-    #   if(is.na(ROX.array[i,j,k])){ROX.array[i,j,k] <- mean(ROX.array[i,j,])}
-    #   if(is.na(FAM.array[i,j,k])){FAM.array[i,j,k] <- mean(FAM.array[i,j,])}
-    #   if(is.na(YY.array[i,j,k])){YY.array[i,j,k] <- mean(YY.array[i,j,])}
-    # }   #I can't get this shit to work - it doesn't matter, but it's bothering me.
     #ROX
     ROX.mean[i,j] <- mean(ROX.array[i,j,], na.rm = T)
     ROX.sd[i,j] <- sd(ROX.array[i,j,], na.rm = T)
@@ -103,15 +100,14 @@ for(i in 1:16){ #rows
     YY.mean[i,j] <- mean(YY.array[i,j,], na.rm = T)
     YY.sd[i,j] <- sd(YY.array[i,j,], na.rm = T)
     }
-print(i)
 }
 
 
-ROX.array[is.na(ROX.array[,,1])] <- 1
+#ROX.array[is.na(ROX.array[,,1])] <- 1
 
-sum(is.na(ROX.array))
-sum(is.na(FAM.array))
-sum(is.na(YY.array))
+sum(is.na(ROX.array))/length(ROX.array)
+sum(is.na(FAM.array))/length(FAM.array)
+sum(is.na(YY.array))/length(YY.array)
 # length(ROX.array)
 
 
@@ -179,9 +175,6 @@ boxplot(YY.sd.norm, ylab = "sd/mean(sd)", xlab = "column index", main = "YY sd b
 boxplot(YY.mean.norm, ylab = "avg YY", xlab = "column index", main = "avg YY by col", col = "blue")
 
 
-
-
-
 #adaptive?
 par(mar = c(1, 1, 1, 1))
 par(mfrow = c(3,1))
@@ -193,13 +186,14 @@ plot(cutoffs.FAM, main = "FAM cutoffs", col = "green")
 plot(cutoffs.YY, main = "YY cutoffs", col = "blue")
 
 head(cutoffs.ROX, 15); tail(cutoffs.ROX, 5); 
-min.cutoff.ROX <- cutoffs.ROX[3]; max.cutoff.ROX <- cutoffs.ROX[length(cutoffs.ROX)-2]
+min.cutoff.ROX <- cutoffs.ROX[9]; max.cutoff.ROX <- cutoffs.ROX[length(cutoffs.ROX)-2]
 
-head(cutoffs.FAM, 5); tail(cutoffs.FAM, 20)
+head(cutoffs.FAM, 20); tail(cutoffs.FAM, 20)
 min.cutoff.FAM <- cutoffs.FAM[3]; max.cutoff.FAM <- cutoffs.FAM[length(cutoffs.FAM)-2]
 
 head(cutoffs.YY, 70); tail(cutoffs.YY, 5)
 min.cutoff.YY <- cutoffs.YY[4]; max.cutoff.YY <- cutoffs.YY[length(cutoffs.YY)-3]
+
 
 #removing NTC fluoro values that somehow aren't being caught by the ranges earlier
 for(i in 1:2){
