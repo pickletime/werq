@@ -13,15 +13,29 @@ NGF <- function(dir, plotbinary = 0){
     install.packages("gplots", dependencies = TRUE); library(gplots)}
   if (!require("RColorBrewer")) {
     install.packages("RColorBrewer", dependencies = TRUE); library(RColorBrewer)}
-  
+  if (!require("png")) {
+    install.packages("png", dependencies = TRUE); library(png)}
 
   #pick target file(s)
   target.file <- list.files()
   target.file <- target.file[1]; target.file
+  target.file.name <- sub(".csv", "", target.file)
   #pull in whole file, filling 
   working.file <- read.table(file = target.file, fill = T)
   #start new df from appropriate location
-  df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1])
+  
+  
+  #testing?
+  # ifelse(dim(working.file)[2] == 3){
+  #   working.file <- read.table(file = target.file, fill = T, row.names = NULL); df.working.file <- data.frame(working.file[(match("Data",working.file[,1])+2):nrow(working.file),1]),
+  #   df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1])
+  # }
+  if(dim(working.file)[2] == 3){
+    working.file <- read.table(file = target.file, fill = T, row.names = NULL) 
+  }
+  
+  #df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1])
+  df.working.file <- data.frame(working.file[(match("Data",working.file[,1])+2):nrow(working.file),1])
   
   #turning off warnings pseudo-locally
   oldw <- getOption("warn")
@@ -33,7 +47,7 @@ NGF <- function(dir, plotbinary = 0){
                                 "Norm","Carrier","DaughterWell"))
     #new kraken has another column (AliquotID) but it doesn't seem to be used?
   well.list <- sort(unique(df.final$DaughterWell))
-  snp.list <- unique(df.final$SNPID)
+  #snp.list <- unique(df.final$SNPID)   #this isn't used, but i sort of want it anyway
   #this is wrong. i need to correct this for sure
   uncalled <- c("?", "NTC", "")
   
@@ -44,9 +58,6 @@ NGF <- function(dir, plotbinary = 0){
   
   
   #how to extract #matching whatever
-  #length(df.final$SNPID[df.final$SNPID == snp.list[1]])
-  #length(df.subset$Call[df.subset$Call == uncalled])/length(df.subset$DaughterWell)
-  
   #I actually think this works now. No way it's that easy.
   for(i in 1:length(well.list)){
     loop.df.subset <- df.final[df.final$DaughterWell == well.list[i],]
@@ -58,6 +69,7 @@ NGF <- function(dir, plotbinary = 0){
   #this one is fine
   data.cols <- as.numeric(substr(raw.output.table[,1],2,3))
   #this one is not fine i just need to figure this out
+  #edit: this one is now fine. I have figured it out.
   data.rows <- substr(raw.output.table[,1],1,1)
   fac <- factor(data.rows); levels(fac) <- 1:16; data.rows <- as.numeric(fac)
   #and of course
@@ -65,6 +77,7 @@ NGF <- function(dir, plotbinary = 0){
   
     
   #once the data.rows is fine we'll be good to go
+  #edit: is not gee too gee
   data.table <- matrix(data = 0, nrow = length(unique(data.rows)), ncol = length(unique(data.cols)))
   
   #pushing rows/cols into output df
@@ -82,28 +95,35 @@ NGF <- function(dir, plotbinary = 0){
   
   data.table[1:2,1:2] <- 0
   output.matrix <- 100*matrix(as.numeric(unlist(data.table)),nrow=nrow(data.table))
+  
   if(plotbinary == 1){
     #plotting shit
     #par(mar = c(1, 1, 1, 1))
-    plate.pass.rate <- heatmap.2(x = output.matrix, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-                                 cellnote = signif(output.matrix,2), notecol = "black", notecex = 0.5,
-                                 trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-                                 main = target.file, col = colorRampPalette(c("white", "red"))(100))
-    
-    t.test(output.matrix[1,], output.matrix[2:15,]); t.test(output.matrix[16,], output.matrix[2:15,])
-    t.test(output.matrix[1,], output.matrix[16,])
-    
+    # plate.pass.rate <- heatmap.2(x = output.matrix, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
+    #                              cellnote = signif(output.matrix,2), notecol = "black", notecex = 0.5,
+    #                              trace = "none", key = FALSE, xlab = "Column", ylab = "row",
+    #                              main = target.file, col = colorRampPalette(c("white", "red"))(100))
+    # t.test(output.matrix[1,], output.matrix[2:15,]); t.test(output.matrix[16,], output.matrix[2:15,])
+    # t.test(output.matrix[1,], output.matrix[16,])
+
     #par(mar = c(1, 1, 1, 1))
-    par(mfrow=c(2,1))
-    boxplot(output.matrix, ylab = "average failure rate", xlab = "column index", main = "average failure rate per column", col = "orange", xaxt = 'n')
-    boxplot(t(output.matrix), ylab = "average failure rate", xlab = "row index", main = "average failure rate per row", col = "gold", xaxt = 'n')
+    # par(mfrow=c(2,1))
+    boxplot1 <- boxplot(output.matrix, ylab = "average failure rate", xlab = "column index", main = "average failure rate per column", col = "orange", xaxt = 'n')
+    boxplot2 <- boxplot(t(output.matrix), ylab = "average failure rate", xlab = "row index", main = "average failure rate per row", col = "gold", xaxt = 'n')
+    
+    # i'm trying to get it to print the figures because they won't consistently display
+    # oldwd <- getwd(); setwd("L:/DT/R/NGF.figures")
+    # png(filename = paste())
+    # 
+    # paste(sub("Genotyping", "Row boxplot", target.file.name),sep = "",
+    # setwd(oldwd)
+    # dev.off()
   }
   
   #save the trimmed/neat version. also: row.names=F is heaven.
   oldwd <- getwd()
   setwd("L:/DT/R/NGF")
-  target.file <- sub(".csv", "", target.file)
-  write.csv(df.final[,-c(9,10)], file = paste(sub("Genotyping", "Trimmed NGF", target.file),sep = "", ".csv"), row.names = F)
+  write.csv(df.final[,-c(9,10)], file = paste(sub("Genotyping", "Trimmed NGF", target.file.name),sep = "", ".csv"), row.names = F)
   setwd(oldwd)
   print("NGF file trimmed, placed in relevant directory thx GLHF")
 }

@@ -16,7 +16,7 @@ for(i in 1:length(git.file)){
     df.working.file <- data.frame(working.file[2:nrow(working.file),]),
     df.working.file <- rbind(df.working.file, data.frame(working.file[2:nrow(working.file),]))
   )
-  print(dim(df.working.file))
+  print(dim(df.working.file)[1])
   print(100*(1-signif(i/length(git.file),3)))
 }
 
@@ -63,7 +63,7 @@ for(i in 1:length(git.file)){
       ifelse(length(subset.output.table[subset.output.table[,4] == j,2]) >0 , 
            data.table[i,j] <- subset.output.table[subset.output.table[,4] == j,2], 0)
     }
-    print(100*signif(i/length(unique(data.rows))))
+    #print(100*signif(i/length(unique(data.rows)))) #this isn't useful but i'm scared to delete
   }
   
   data.table[1:2,1:2] <- 0

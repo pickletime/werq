@@ -1,7 +1,7 @@
-fplKS <- function(a, initials = "DT"){
+fplKS <- function(a, initials){
 #rename duplicate samples across the two potential fields for duplication for killsheets
 #obligatories
-  vers <- "v_1.2" #version tracking? idk maybe this is a thing
+  vers <- "v_1.3" #I'M JUST STUPID AND FEEL BAD ABOUT MYSELF
 #1.1: only prints text if necessary, but still does everything because it's supposed to.
 #1.2: it was randomly creating duplicate barcodes, so i added a test before the renumbering.
   test <- read.csv(a, header = T, blank.lines.skip = T)
@@ -25,21 +25,22 @@ fplKS <- function(a, initials = "DT"){
   #rename dups in Carc ONLY IF dups exist
   if(length(tg_x)>0) {
     for(i in seq_along(tg_x)){
-      testloop <- test[test$Glatt..==tg_x[i],]
+      testloop <- test[test$CarcassID==tg_x[i],]
       testlooplen <- as.numeric(paste(-dim(testloop)[1]))
       testloopvector <- as.numeric(seq(from = -1, to = testlooplen))
-      newvals <- as.numeric(paste(testloopvector,testloop$Glatt.., sep=""))
-      test$Glatt..[test$Glatt..==tg_x[i]] <- newvals
+      newvals <- as.numeric(paste(testloopvector,testloop$CarcassID, sep=""))
+      test$CarcassID[test$CarcassID==tg_x[i]] <- newvals
     }
   }
   
   #rename dups in Sample.ID ONLY IF dups exist
+  #for some reason this broke and replaced $Sample.Barcode with $DNA. Check here if it borks again?
   if(length(td_x)>0){
     for(i in seq_along(td_x)){
-      testloop <- test[test$DNA..==td_x[i],]
+      testloop <- test[test$Sample.Barcode==td_x[i],]
       testlooplen <- as.numeric(paste(-dim(testloop)[1]))
       testloopvector <- as.numeric(seq(from = -1, to = testlooplen))
-      test$DNA..[test$DNA..==td_x[i]] <- as.numeric(paste(testloopvector,testloop$DNA.., sep=""))
+      test$Sample.Barcode[test$Sample.Barcode==td_x[i]] <- as.numeric(paste(testloopvector,testloop$Sample.Barcode, sep=""))
     }
   }
 #file naming/output
