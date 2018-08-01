@@ -54,6 +54,4 @@ killsheet.filenames <- list.files()
 for (i in 1:length(killsheet.filenames)){aurKS(killsheet.filenames[i])}
 
 #####NGF WHATUP
-source("L:/DT/R/NGF.R")
-for(i in 42:43){NGF.lite(dir,i); print(i)}
-source("L:/DT/R/NGF.R"); NGF("//us-kraken/kraken/Projects/027/362/Results", 1)
+source("L:/DT/R/NGF.R"); NGF("//us-kraken/kraken/Projects/004/169/Results", 0)

@@ -1,8 +1,8 @@
 #I'm ultimately going to try to do something meaningful here. I think data quality across sisterplates is a reasonable start?
-
-NGF <- function(dir, plotbinary = 0){
+plotbinary = 1
+dir <- "//us-kraken/kraken/Projects/069/020/Results"
   setwd(dir)
-#necessary lib loading
+  #necessary lib loading
   if (!require("data.table")) {
     install.packages("data.table", dependencies = TRUE); library(data.table)}
   if (!require("reshape")) {
@@ -15,7 +15,7 @@ NGF <- function(dir, plotbinary = 0){
     install.packages("RColorBrewer", dependencies = TRUE); library(RColorBrewer)}
   if (!require("png")) {
     install.packages("png", dependencies = TRUE); library(png)}
-
+  
   #pick target file(s)
   target.file <- list.files()
   target.file <- target.file[1]; target.file
@@ -45,7 +45,7 @@ NGF <- function(dir, plotbinary = 0){
   df.final <- separate(data = df.working.file, col = 1, sep = "\\,",
                        into = c("DaughterPlate","MasterPlate","MasterWell","Call","X","Y","SNPID","SubjectID",
                                 "Norm","Carrier","DaughterWell"))
-    #new kraken has another column (AliquotID) but it doesn't seem to be used?
+  #new kraken has another column (AliquotID) but it doesn't seem to be used?
   well.list <- sort(unique(df.final$DaughterWell))
   #snp.list <- unique(df.final$SNPID)   #this isn't used, but i sort of want it anyway
   #this is wrong. i need to correct this for sure
@@ -75,7 +75,7 @@ NGF <- function(dir, plotbinary = 0){
   #and of course
   raw.output.table[,2] <- as.numeric(raw.output.table[,2])
   
-    
+  
   #once the data.rows is fine we'll be good to go
   #edit: is not gee too gee
   data.table <- matrix(data = 0, nrow = length(unique(data.rows)), ncol = length(unique(data.cols)))
@@ -96,34 +96,29 @@ NGF <- function(dir, plotbinary = 0){
   data.table[1:2,1:2] <- 0
   output.matrix <- 100*matrix(as.numeric(unlist(data.table)),nrow=nrow(data.table))
   
-  if(plotbinary == 1){
     #plotting shit
     par(mar = c(1, 1, 1, 1))
-     plate.pass.rate <- heatmap.2(x = output.matrix, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-                                  cellnote = signif(output.matrix,2), notecol = "black", notecex = 0.5,
-                                  trace = "none", key = FALSE, xlab = "Column", ylab = "row",
-                                  main = target.file, col = colorRampPalette(c("white", "red"))(100))
+    plate.pass.rate <- heatmap.2(x = output.matrix, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
+                                 cellnote = signif(output.matrix,2), notecol = "black", notecex = 0.5,
+                                 trace = "none", key = FALSE, xlab = "Column", ylab = "row",
+                                 main = target.file, col = colorRampPalette(c("white", "red"))(100))
+    
     t.test(output.matrix[1,], output.matrix[2:15,]); t.test(output.matrix[16,], output.matrix[2:15,])
     t.test(output.matrix[1,], output.matrix[16,])
-
+    
     #par(mar = c(1, 1, 1, 1))
     par(mfrow=c(2,1))
     boxplot1 <- boxplot(output.matrix, ylab = "average failure rate", xlab = "column index", main = "average failure rate per column", col = "orange", xaxt = 'n')
     boxplot2 <- boxplot(t(output.matrix), ylab = "average failure rate", xlab = "row index", main = "average failure rate per row", col = "gold", xaxt = 'n')
-    
+
+    # min.OP <- min(output.matrix)
+    # max.OP <- max(output.matrix)
+    # dist.OP <- max.OP - min.OP
+    # hist(unlist(output.matrix), breaks = seq(min.OP, max.OP, by = dist.OP/100))
     # i'm trying to get it to print the figures because they won't consistently display
     # oldwd <- getwd(); setwd("L:/DT/R/NGF.figures")
-    # png(filename = paste())
-    # 
-    # paste(sub("Genotyping", "Row boxplot", target.file.name),sep = "",
-    # setwd(oldwd)
-    # dev.off()
-  }
-  
-  #save the trimmed/neat version. also: row.names=F is heaven.
-  oldwd <- getwd()
-  setwd("L:/DT/R/NGF")
-  write.csv(df.final[,-c(9,10)], file = paste(sub("Genotyping", "Trimmed NGF", target.file.name),sep = "", ".csv"), row.names = F)
-  setwd(oldwd)
-  print("NGF file trimmed, placed in relevant directory thx GLHF")
-}
+    oldwd <- getwd()
+    setwd("L:/DT/R/NGF")
+    write.csv(df.final[,-c(9,10)], file = paste(sub("Genotyping", "Trimmed NGF", target.file.name),sep = "", ".csv"), row.names = F)
+    setwd(oldwd)
+    print("NGF file trimmed, placed in relevant directory thx GLHF")

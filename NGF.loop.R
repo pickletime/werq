@@ -6,6 +6,7 @@
 
 #i'm defaulting here because this is where i'm spitting files out now
 setwd("L:/DT/R/NGF")
+library(gplots)
 
 #pick target file(s) - NEED TO BE UNFORMATTED
 git.file <- list.files()
@@ -85,12 +86,19 @@ for(i in 1:length(git.file)){
   t.test(output.matrix[1,], output.matrix[16,])
   length(df.final$DaughterPlate)
   mean(output.matrix)
+  
+  library("Hmisc")
+  
+  abc <- rcorr(output.matrix)
+  #abc <- matrix(as.numeric(unlist(abc)),nrow=nrow(abc))
 
+  #heatmap.2(x = abc)
+  
   # #i could make the grid i'm dreaming of with a two nested for loops?
   # a <- t.test(output.matrix[1:2,])
   # a$p.value
   # str(a)
   
   #save the trimmed/neat version. also: row.names=F is heaven.
-  #write.csv(df.final[,-c(9,10)], file = paste("super bulk output", sub(".csv", "", target.file), ".csv", sep = "-"), row.names = F)
+  write.csv(df.final[,-c(9,10)], file = paste("super bulk output", ".csv"), row.names = F)
 

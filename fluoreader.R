@@ -3,7 +3,7 @@
 install.packages("gplots")
 install.packages("colorRamps")
 
-
+setwd("L:/DT/2016") #lfk 2016
 setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/2") #dublin 3/21
 setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/dub.20180323/3") #dublin 3/23
 setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/dub.20180327") #dublin 3/21
@@ -14,13 +14,13 @@ setwd("//us-kraken/kraken/Plate reader archive/2017/09/22/1") #looking at shifti
 setwd("//us-kraken/kraken/Plate reader archive/2017/09/28/1") #more shifting
 setwd("//us-kraken/kraken/Plate reader archive/2018/04/09/1") #more shifting
 
-setwd("//us-kraken/kraken/Plate reader archive/2018/06/19/1") #more shifting
+setwd("//us-kraken/kraken/Plate reader archive/2018/07/30/1") #more shifting
 
 setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/testing")
 
-max.cutoff.ROX <- 4500; min.cutoff.ROX <- 1500
-max.cutoff.FAM <- 15000; min.cutoff.FAM <- 2500
-max.cutoff.YY <- 5000; min.cutoff.YY <- 500
+max.cutoff.ROX <- 5000; min.cutoff.ROX <- 1100
+max.cutoff.FAM <- 15000; min.cutoff.FAM <- 2000
+max.cutoff.YY <- 5500; min.cutoff.YY <- 500
 library(colorRamps)
 library(gplots)
 #initializing
@@ -185,14 +185,15 @@ plot(cutoffs.ROX, main = "ROX cutoffs", col = "red")
 plot(cutoffs.FAM, main = "FAM cutoffs", col = "green")
 plot(cutoffs.YY, main = "YY cutoffs", col = "blue")
 
-head(cutoffs.ROX, 15); tail(cutoffs.ROX, 5); 
-min.cutoff.ROX <- cutoffs.ROX[9]; max.cutoff.ROX <- cutoffs.ROX[length(cutoffs.ROX)-2]
-
-head(cutoffs.FAM, 20); tail(cutoffs.FAM, 20)
-min.cutoff.FAM <- cutoffs.FAM[3]; max.cutoff.FAM <- cutoffs.FAM[length(cutoffs.FAM)-2]
-
-head(cutoffs.YY, 70); tail(cutoffs.YY, 5)
-min.cutoff.YY <- cutoffs.YY[4]; max.cutoff.YY <- cutoffs.YY[length(cutoffs.YY)-3]
+# I've taken this section out because it's clearly no longer necessary
+# head(cutoffs.ROX, 15); tail(cutoffs.ROX, 5); 
+# min.cutoff.ROX <- cutoffs.ROX[9]; max.cutoff.ROX <- cutoffs.ROX[length(cutoffs.ROX)-2]
+# 
+# head(cutoffs.FAM, 20); tail(cutoffs.FAM, 20)
+# min.cutoff.FAM <- cutoffs.FAM[3]; max.cutoff.FAM <- cutoffs.FAM[length(cutoffs.FAM)-2]
+# 
+# head(cutoffs.YY, 70); tail(cutoffs.YY, 5)
+# min.cutoff.YY <- cutoffs.YY[4]; max.cutoff.YY <- cutoffs.YY[length(cutoffs.YY)-3]
 
 
 #removing NTC fluoro values that somehow aren't being caught by the ranges earlier
@@ -218,42 +219,42 @@ raw.heatmap.ROX <- heatmap.2(x = ROX.mean.norm, Rowv = FALSE, Colv = FALSE, dend
                          cellnote = signif(ROX.mean.norm,3), notecol = "black", notecex = 0.5,
                          trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
                          main = "heatmapping ROX mean", col = colorRampPalette(c("red", "white"))(resolution))
-#FAM heatmapping
-# sd.heatmap.FAM <- heatmap.2(x = FAM.sd.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-#                         cellnote = signif(FAM.sd.norm,3), notecol = "black", notecex = 0.5,
-#                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-#                         main = "heatmapping FAM sd", col = colorRampPalette(c("white", "green"))(resolution))
-
-raw.heatmap.FAM <- heatmap.2(x = FAM.mean.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-                         cellnote = signif(FAM.mean.norm,3), notecol = "black", notecex = 0.5,
-                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-                         main = "heatmapping FAM mean", col = colorRampPalette(c("green", "white"))(resolution))
-#YY heatmapping
-# sd.heatmap.YY <- heatmap.2(x = YY.sd.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-#                         cellnote = signif(YY.sd.norm,3), notecol = "black", notecex = 0.5,
-#                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-#                         main = "heatmapping YY sd", col = colorRampPalette(c("white", "blue"))(resolution))
-
-raw.heatmap.YY <- heatmap.2(x = YY.mean.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
-                         cellnote = signif(YY.mean.norm,3), notecol = "black", notecex = 0.5,
-                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-                         main = "heatmapping YY mean", col = colorRampPalette(c("blue", "white"))(resolution))
-
-
-
-dev.off()
-
-
-
-
-index <- 1
-
-#additional funsies
-getwd()
-readreader(input.vector[1])
-rox1 <- ROX.array[,,index]/ROX.mean.norm
-fam1 <- (FAM.array[,,index]/FAM.mean.norm)/rox1
-yy1 <- (YY.array[,,index]/YY.mean.norm)/rox1
-
-plot(x = fam1, y = yy1)
-rox1 - ROX.array[,,1]
+# #FAM heatmapping
+# # sd.heatmap.FAM <- heatmap.2(x = FAM.sd.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
+# #                         cellnote = signif(FAM.sd.norm,3), notecol = "black", notecex = 0.5,
+# #                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
+# #                         main = "heatmapping FAM sd", col = colorRampPalette(c("white", "green"))(resolution))
+# 
+# raw.heatmap.FAM <- heatmap.2(x = FAM.mean.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
+#                          cellnote = signif(FAM.mean.norm,3), notecol = "black", notecex = 0.5,
+#                          trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
+#                          main = "heatmapping FAM mean", col = colorRampPalette(c("green", "white"))(resolution))
+# #YY heatmapping
+# # sd.heatmap.YY <- heatmap.2(x = YY.sd.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
+# #                         cellnote = signif(YY.sd.norm,3), notecol = "black", notecex = 0.5,
+# #                         trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
+# #                         main = "heatmapping YY sd", col = colorRampPalette(c("white", "blue"))(resolution))
+# 
+# raw.heatmap.YY <- heatmap.2(x = YY.mean.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
+#                          cellnote = signif(YY.mean.norm,3), notecol = "black", notecex = 0.5,
+#                          trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
+#                          main = "heatmapping YY mean", col = colorRampPalette(c("blue", "white"))(resolution))
+# 
+# 
+# 
+# dev.off()
+# 
+# 
+# 
+# 
+# index <- 1
+# 
+# #additional funsies
+# getwd()
+# readreader(input.vector[1])
+# rox1 <- ROX.array[,,index]/ROX.mean.norm
+# fam1 <- (FAM.array[,,index]/FAM.mean.norm)/rox1
+# yy1 <- (YY.array[,,index]/YY.mean.norm)/rox1
+# 
+# plot(x = fam1, y = yy1)
+# rox1 - ROX.array[,,1]
