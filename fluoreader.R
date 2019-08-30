@@ -1,26 +1,32 @@
 #heatmapping, that's all?
 
-install.packages("gplots")
-install.packages("colorRamps")
+install.packages("gplots"); library(gplots)
 
-setwd("L:/DT/2016") #lfk 2016
-setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/2") #dublin 3/21
-setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/dub.20180323/3") #dublin 3/23
-setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/dub.20180327") #dublin 3/21
-setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/dub.feb") #dublin feb 18
-setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/1") #huge archive of files (like 6k)
-setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/feb") #feb 18 reads
+install.packages("colorRamps"); library(colorRamps)
+
+#newone
+setwd("U:/Plate reader archive/2019/08/2019/1")
+#newone
+
+#bulkmonth
+setwd("C:/Users/dtaylor/Documents/R funsies/2019/01")
+setwd("L:/DT/2016")
+#bulkmonth
+
 setwd("//us-kraken/kraken/Plate reader archive/2017/09/22/1") #looking at shifting
 setwd("//us-kraken/kraken/Plate reader archive/2017/09/28/1") #more shifting
 setwd("//us-kraken/kraken/Plate reader archive/2018/04/09/1") #more shifting
-
 setwd("//us-kraken/kraken/Plate reader archive/2018/07/30/1") #more shifting
 
-setwd("c:/Users/dtaylor.IDENTIGENIRL/Documents/R/readreader/testing")
+#bad arrays for a given project
+setwd("C:/Users/dtaylor/Documents/vertical shifting examination/bed")
+#good arrays for a given project
+setwd("C:/Users/dtaylor/Documents/vertical shifting examination/gud")
 
-max.cutoff.ROX <- 5000; min.cutoff.ROX <- 1100
-max.cutoff.FAM <- 15000; min.cutoff.FAM <- 2000
-max.cutoff.YY <- 5500; min.cutoff.YY <- 500
+#param intitialization
+max.cutoff.ROX <- 7500; min.cutoff.ROX <- 500
+max.cutoff.FAM <- 15000; min.cutoff.FAM <- 1000
+max.cutoff.YY <- 7500; min.cutoff.YY <- 500
 library(colorRamps)
 library(gplots)
 #initializing
@@ -85,7 +91,7 @@ for(i in 1:depth){
     }
   }
   if(depth > 1){print(100*(1-((length(input.vector) - i)/length(input.vector))))}
-}
+} #reading in files
 
 #big loop for pulling out NA in big arrays, mean-ing/sd-ing
 for(i in 1:16){ #rows
@@ -100,7 +106,7 @@ for(i in 1:16){ #rows
     YY.mean[i,j] <- mean(YY.array[i,j,], na.rm = T)
     YY.sd[i,j] <- sd(YY.array[i,j,], na.rm = T)
     }
-}
+} #pulling out NA
 
 
 #ROX.array[is.na(ROX.array[,,1])] <- 1
@@ -218,7 +224,13 @@ resolution <- 100
 raw.heatmap.ROX <- heatmap.2(x = ROX.mean.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
                          cellnote = signif(ROX.mean.norm,3), notecol = "black", notecex = 0.5,
                          trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-                         main = "heatmapping ROX mean", col = colorRampPalette(c("red", "white"))(resolution))
+                         main = paste("heatmapping ROX, n =", depth), col = colorRampPalette(c("red", "white"))(resolution))
+
+
+plot(abc, ylim = c(0,4000))
+
+abc <- mapply(unlist, ROX.mean)
+
 # #FAM heatmapping
 # # sd.heatmap.FAM <- heatmap.2(x = FAM.sd.norm, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
 # #                         cellnote = signif(FAM.sd.norm,3), notecol = "black", notecex = 0.5,

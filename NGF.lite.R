@@ -94,7 +94,7 @@ boxplot(t(output.matrix), ylab = "average failure rate", xlab = "row index", mai
 
 
 #save the trimmed/neat version. also: row.names=F is heaven.
-
+setwd("L:/DT/R/NGF")
 target.file <- sub(".csv", "", target.file)
 write.csv(df.final[,-c(9,10)], file = paste(sub("Genotyping", "Trimmed NGF", target.file),sep = "", ".csv"), row.names = F)
 }

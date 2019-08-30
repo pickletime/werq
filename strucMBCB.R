@@ -10,13 +10,14 @@
 #K
 
 #bulk load relevant libraries
-x <- c("data.table", "reshape2","tidyr", "dplyr", "tidyselect", "devtools")
+x <- c("data.table", "reshape2","tidyr", "dplyr", "tidyselect", "devtools", "githubinstall")
 lapply(x, require, character.only = T)
 
-install_github("pickletime/ParallelStructure_IR")
+
+install_github("pickletime/ParallelStructure_IR"); library(ParallelStructure_IR)
 
 #install_github("b00mir/ParallelStructure_IR")
-library(ParallelStructureIR)
+
 
 #enterables:
 
@@ -83,7 +84,9 @@ loci2 <- (ncol(final.file)-4)/2
 write.table((structure_list), file = "./R/joblist1.txt", row.names = F, col.names = F, quote = F, sep = " ")
 write.table(final.file, file  = "./R/data.txt", row.names = F, col.names = F, quote = F, sep = " ")
 
-structure.filepath <-  "C:/Users/dtaylor.IDENTIGENIRL/Documents/R/TEST/"
+#structure.filepath <-  "C:/Users/dtaylor.IDENTIGENIRL/Documents/R/TEST/"
+#I'm pretty sure i'll have to copy it into this directory, until then i'm testing a different place
+structure.filepath <- "L:/DT/R/struc"
 joblist.filepath   <-  './R/joblist1.txt'
 infile.filepath    <-  './R/data.txt'
 output.filepath    <-  './R/structure_results'

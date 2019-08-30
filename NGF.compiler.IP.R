@@ -5,21 +5,121 @@
 
 
 #i'm defaulting here because this is where i'm spitting files out now
-setwd("L:/DT/R/NGF")
+setwd("C:/Users/DYLAN/Desktop/WERQ/R/NGF")
+  new.wd <- choose.dir()
+setwd(new.wd); getwd()
+
 library(gplots)
+distance.func <- function(x1, x2, y1, y2){sqrt((x2-x1)^2 + (y2-y1)^2)}
 
 #pick target file(s) - NEED TO BE UNFORMATTED
-git.file <- list.files()
-for(i in 1:length(git.file)){
-  working.file <- read.csv(git.file[i], sep = ",")
+file.list <- list.files()
+for(i in 1:length(file.list)){
+  working.file <- read.csv(file.list[i], sep = ",")
   ifelse(
     i < 2,
     df.working.file <- data.frame(working.file[2:nrow(working.file),]),
     df.working.file <- rbind(df.working.file, data.frame(working.file[2:nrow(working.file),]))
   )
   print(dim(df.working.file)[1])
-  print(100*(1-signif(i/length(git.file),3)))
+  print(100*(1-signif(i/length(file.list),3)))
 } #reading in files in relevant location
+
+
+###if i'm looking to fuck around just target the first file?
+
+#This has to exist - at some point i'll probably add more. For the time being this is fine.
+uncalled <- c("?", "NTC", "", "Over", "DUPE", "Uncallable")
+
+#This is purely for fucking around now
+df.working.file <- read.csv(file.list[2])
+df.working.file.called <- df.working.file[!df.working.file$Call %in% uncalled,]
+unique(df.working.file.called$Call); unique(df.working.file$Call)
+
+df.final <- df.working.file
+#Below line is for removing a bunch of shit
+#df.called <- df.final[!df.final$Call %in% uncalled,-c(1,2,3,8,9)]
+
+df.called <- df.final[!df.final$Call %in% uncalled,]
+unique(df.working.file.called$Call)
+# df.called.2 <- df.called[1:400,]
+# df.called.2$x.mean <- NA
+# df.called.2$y.mean <- NA
+# df.called.2$distance <- NA
+head(df.working.file.called)
+head(master.snp.df)
+
+#this is overwhelmingly the most constructive
+# df.called.2.snplist <- unique(df.called.2$SNPID)
+# temp <- df.called.2[df.called.2$SNPID == df.called.2.snplist[1],]
+# df.called.2.calls <- unique(temp$Call)
+# temp <- df.called.2[df.called.2$Call == df.called.2.calls[3],]
+# temp$x.mean <- mean(temp$X)
+# temp$y.mean <- mean(temp$Y)
+# temp$distance <- with(temp,distance.func(X,x.mean, Y, y.mean))
+# #HOLY SHIT IT WORKS I'M A GENIUS
+# df.called.2[df.called.2$SNPID == df.called.2.snplist[1] & df.called.2$Call == df.called.2.calls[3],5:6] <- temp[,5:6]
+
+#bulktest
+        ##testing
+          
+        ##testing
+df.called$x.mean <- NA
+df.called$y.mean <- NA
+df.called$distance <- NA
+subset.called.snplist <- unique(df.called$SNPID)
+for (i in 1:length(subset.called.snplist)){
+  print(paste("i is",i))
+  #subsetting master DF for each snp
+  subset.temp <- df.called[df.called$SNPID == subset.called.snplist[i],]
+  #setting up subsetting for each GT/snp
+  subset.called.calls <- unique(subset.temp$Call)
+  for(j in 1:length(subset.called.calls)){
+    print(paste("j is",j))    
+    #temporary dataframe for each genotype
+    subset.temp.calls <- subset.temp[subset.temp$Call == subset.called.calls[j],]
+    #x/y averages because i'm too dumb to do it any other way
+    subset.temp.calls$x.mean <- mean(subset.temp.calls$X)
+    subset.temp.calls$y.mean <- mean(subset.temp.calls$Y)
+    #distance between each sample and the center of each cluster
+    subset.temp.calls$distance <- with(subset.temp.calls,distance.func(X,x.mean, Y, y.mean))
+    #reading those distances back into the master DF
+  #below line is for removing a subset of columns. I think that's a bad idea bc you can never have too much data?
+    #df.called[df.called$SNPID == subset.called.snplist[i] & df.called$Call == subset.called.calls[j],5:7] <- subset.temp.calls[,5:7]
+    df.called[df.called$SNPID == subset.called.snplist[i] & df.called$Call == subset.called.calls[j],10:12] <- subset.temp.calls[,10:12]
+  } #determine center for each GT
+}
+##end bulktest
+#distance table between clusters
+distances.matrix <- matrix(nrow = length(unique(df.called$SNPID)), ncol = length(unique(df.called$Call)),NA)
+rownames(distances.matrix) <- unique(df.called$SNPID)
+colnames(distances.matrix) <- unique(df.called$Call)
+df.distance.table <- with(df.called,tapply(distance, list(SNPID = SNPID, Call = Call), mean))
+df.distance.table <- df.distance.table[,!colnames(df.distance.table) %in% uncalled]
+
+tester <- df.distance.table[1,!is.na(df.distance.table[1,])]; tester
+genotype.calls <- names(df.distance.table[1,!is.na(df.distance.table[1,])])
+tester.storage <- array(data =NA, dim = c(2,3,length(unique(df.called$SNPID))))
+
+for(i in 1:2){
+#  rownames(tester.storage)[i] <- genotype.calls[i]
+  for(j in 1:3){
+    tester.storage[i,j,1] <- abs(tester[i] - tester[j])
+#    colnames(tester.storage)[j] <- genotype.calls[j]
+  }
+}
+rownames(tester.storage) <- genotype.calls[1:2]
+colnames(tester.storage) <- genotype.calls[1:3]
+tester.storage[,,1]
+
+#to keep
+master.snp.df <- df.called
+##to keep
+
+
+
+
+###only if i'm playing around
 
 #and now the end product
   df.final <- df.working.file

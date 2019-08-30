@@ -1,6 +1,6 @@
 #I'm ultimately going to try to do something meaningful here. I think data quality across sisterplates is a reasonable start?
 plotbinary = 1
-dir <- "//us-kraken/kraken/Projects/069/020/Results"
+dir <- "//us-kraken/kraken/Projects/70/047/Results"
   setwd(dir)
   #necessary lib loading
   if (!require("data.table")) {
@@ -15,26 +15,34 @@ dir <- "//us-kraken/kraken/Projects/069/020/Results"
     install.packages("RColorBrewer", dependencies = TRUE); library(RColorBrewer)}
   if (!require("png")) {
     install.packages("png", dependencies = TRUE); library(png)}
-  
-  #pick target file(s)
-  target.file <- list.files()
-  target.file <- target.file[1]; target.file
+
+##testing this next chunk
+  file.list <- list.files()
+  temp.d <- tempdir()
+  #
+  file.list <- file.list[grepl("Genotyping", file.list)] #DATGREPLTHO
+  temp.list <- unzip(file.list[1],exdir = temp.d)
+  working.file <- read.table(file = temp.list[2], fill = T)
+  setwd(temp.d); file.list <- list.files(); file.list
   target.file.name <- sub(".csv", "", target.file)
+  unlink(temp.d)
+  rm(file.list)
+#end testing  
+
+#removed bc testing. If fail: reactivate
+  #pick target file(s)
+  #target.file <- list.files()
+  #target.file <- target.file[1]; target.file
+  #target.file.name <- sub(".csv", "", target.file)
   #pull in whole file, filling 
-  working.file <- read.table(file = target.file, fill = T)
+  #working.file <- read.table(file = target.file, fill = T)
   #start new df from appropriate location
   
   
-  #testing?
-  # ifelse(dim(working.file)[2] == 3){
-  #   working.file <- read.table(file = target.file, fill = T, row.names = NULL); df.working.file <- data.frame(working.file[(match("Data",working.file[,1])+2):nrow(working.file),1]),
-  #   df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1])
-  # }
   if(dim(working.file)[2] == 3){
     working.file <- read.table(file = target.file, fill = T, row.names = NULL) 
   }
   
-  #df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1])
   df.working.file <- data.frame(working.file[(match("Data",working.file[,1])+2):nrow(working.file),1])
   
   #turning off warnings pseudo-locally
