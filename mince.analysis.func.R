@@ -1,5 +1,9 @@
-mastermincer <- function(){
-  version <- "V 1.2"
+mince.analysis.func <- function(){
+  version <- "V 1.3"
+  #1.3: 2019-10-30
+    #There was ambiguity regarding versions somehow. I declare this a new one so that i can void anything made earlier.
+    #In theory this is the validated version. 
+    #Ideally I'll streamline this post-validation because I just need the maths to work out.
   #1.2: 2019-09-13
     #I was summing the profiles instead of counting them, which led to the numbers for the primal batch being incorrect. 
     #I added a variable into each loop that counts the length of nonzero vectors because that's the only way i know how.
@@ -17,8 +21,8 @@ mastermincer <- function(){
     install.packages("gdata", dependencies = TRUE); library(gdata)}
   if (!require("openxlsx")) {
     install.packages("openxlsx", dependencies = TRUE); library(openxlsx)}
-  if (!require("formattable")) {
-    install.packages("formattable", dependencies = TRUE); library(scales)}
+#  if (!require("formattable")) {
+#    install.packages("formattable", dependencies = TRUE); library(scales)}
   
 #local functions
   #extracting values from spadeR is difficult - I function'd it instead of dealing with it every time.
@@ -40,6 +44,10 @@ mastermincer <- function(){
   num.tasks <- as.double(ncol(read.in))
   output <- data.frame(data = NA, nrow = num.tasks, cols = 8)
   colnames(output) <- c("Profiles", "Nest", "Nest UCI")
+#this is to make file naming easier downstream. Yes, I really am reading the file in three times. yep.
+  panel.length <- read.xlsx(xlsxFile = path.file, sheet = "Summary report")[3,4]
+  snp.cutoff <- as.double(read.xlsx(xlsxFile = path.file, sheet = "Settings")[8,2])
+  qc.level <- snp.cutoff/panel.length
 
   
 #I'm apologizing in advance. What follows is the ugliest/clunkiest thing to have ever graced this brown and dying planet.
@@ -47,7 +55,7 @@ mastermincer <- function(){
   #only for 3 task jobs, so it'll appropriately handle primals
     for(i in 1:num.tasks){
       #I added a test here for if doubletons write nothing so that it doesn't break when we run primals (assuming proper sampling)
-      #primals now have sum(i) as values, because maths.
+      #primals now have length(i) instead of sum(i) because one is right and the other isn't.
       if(length(read.in[read.in[,i]>1,i])==0 || i==3) {
         num.profiles <- length((read.in[read.in[,i]>0,i]))
         output[i,] <- rbind(as.vector(c(num.profiles, num.profiles, num.profiles)))
@@ -131,7 +139,7 @@ mastermincer <- function(){
     } #quits if condition 1 or 2 isn't met.
 #Printing to file
   #standard DT file naming convention
-  write.csv(output, file = paste("Grinds analysis for", num.tasks, "tasks", as.character((Sys.Date())), version, ".csv", sep = " "))
+  write.csv(output, file = paste("Grinds analysis for", num.tasks, "tasks at QC level", qc.level, as.character((Sys.Date())), version, ".csv", sep = " "))
   #I'm just so clever
   print("Output in chosen directory")
 }

@@ -1,0 +1,882 @@
+---
+title: "DQA chunkies"
+output: html_document
+date: "2024-04-30"
+---
+The first chunk does math on the NGF, puts the relevant data into a table with the plates from that file, and saves those to a created directory.
+  It works with both perseus and kraken NGF, and if it only has one of those it doesn't error out.
+The second chunk takes all of the plate tables from directory created before and puts them together into one large file.
+The third chunk imports ID003 and associates that with the plate table.
+The fourth chunk cleans up both tables and visualizes.
+
+TBD
+The fifth chunk spits out data summaries for:
+  week
+  month
+  quarter
+  YTD
+
+Installing/loading libraries and functions
+```{r library/function loading, include=FALSE}
+if (!require("data.table")) {
+  install.packages("data.table", dependencies = TRUE); library(data.table)}
+if (!require("reshape")) {
+  install.packages("reshape", dependencies = TRUE); library(reshape)}
+if (!require("tidyr")) {
+  install.packages("tidyr", dependencies = TRUE); library(tidyr)}
+if (!require("gplots")) {
+  install.packages("gplots", dependencies = TRUE); library(gplots)}
+if (!require("RColorBrewer")) {
+  install.packages("RColorBrewer", dependencies = TRUE); library(RColorBrewer)}
+if (!require("dplyr")) {
+  install.packages("dplyr", dependencies = TRUE); library(dplyr)}
+if (!require("tidyverse")) {
+  install.packages("tidyverse", dependencies = TRUE); library(tidyverse)}
+if (!require("psych")) {
+  install.packages("psych", dependencies = TRUE); library(psych)}
+if (!require("FSA")) {
+  install.packages("FSA", dependencies = TRUE); library(FSA)}
+if (!require("ggstatsplot")) {
+  install.packages("ggstatsplot", dependencies = TRUE); library(ggstatsplot)}
+if (!require("ggplot2")) {
+  install.packages("ggplot2", dependencies = TRUE); library(ggplot2)}
+if (!require("openxlsx")) {
+  install.packages("openxlsx", dependencies = TRUE); library(openxlsx)}
+if (!require("stringi")) {
+  install.packages("stringi", dependencies = TRUE); library(stringi)}
+if (!require("psych")) {
+  install.packages("psych", dependencies = TRUE); library(psych)}
+if (!require("FSA")) {
+  install.packages("FSA", dependencies = TRUE); library(FSA)}
+if (!require("ggstatsplot")) {
+  install.packages("ggstatsplot", dependencies = TRUE); library(ggstatsplot)}
+
+#functions
+date.func <- function(value){
+  as.Date(value, origin = "1900-01-01")-2
+} #the '-2' thing is fucked and i don't really understand why it works sometimes and not others. Keep an eye on this?
+n_fun <- function(x){
+  return(data.frame(y = median(x)*1.05, label = paste0("n = ",length(x))))
+} #this exists purely for putting the #obs into boxplots thanks i hate it
+directoryextractor.func <- function(selected.file){
+  filename.vector <- unlist(strsplit(selected.file,'\\\\', fixed = F))
+  filename <- filename.vector[length(filename.vector)]
+  setwd(substr(selected.file, 1, nchar(selected.file)-nchar(filename)))
+}
+#distance formula because i can't be bothered to look up if it already exists
+distance.func <- function(x1, x2, y1, y2){sqrt((x2-x1)^2 + (y2-y1)^2)}
+rename.func <- function(value){
+  new.val <- as.integer(unlist(strsplit(value, NULL)))
+  new.val.1 <- paste(c(new.val[5], new.val[6], new.val[1], new.val[2], 
+                       new.val[3], new.val[4], '-', new.val[8], collapse = ""), collapse= "")
+} #renames reagent lots that follow the naming scheme "mmddyy-n" to "yymmdd-n" SO EZ
+
+
+```
+
+Reformatting NGF. This is overly complicated because I want one directory to be able to handle perseus/kraken files, so it's both file reformatting scripts together instead of split into different chunks. THIS TAKES FUCKING FOREVER I HATE IT
+I SHOULD PLOT COMPETION TIME FUCK THAT WOULD BE FUN
+
+unformatted.file <- file.choose()
+directoryextractor.func(unformatted.file)
+source.file.list <- list.files()
+
+```{r reformat perseus and kraken files, warning=FALSE, echo=FALSE}
+
+unformatted.file <- file.choose()
+directoryextractor.func(unformatted.file)
+source.file.list <- list.files()
+file.list <- source.file.list[grepl("Genotyping_KP.", source.file.list)]
+if(length(file.list)!= 0){
+    
+  
+  if(!dir.exists("./plate.table")) {dir.create("./plate.table")}
+  path_out <- "./plate.table"
+  
+  #perseus:
+  for(a in 1:length(file.list)){
+    working.file <- read.table(file = file.list[a], fill = T, header = F)
+    
+    
+    proj.number <- working.file[3,3]
+    
+    ###this whole thing is for adding project number in, and i don't understand how it's so complicated.
+    
+    df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1])
+    
+    df.final <- separate(data = df.working.file, col = 1, sep = "\\,",
+                         into = c("MasterPlate","MasterWell","Call","SNPID","SubjectID","AICall",
+                                  "FAM", "ROX", "VIC", "DaughterPlate"))
+    df.final$X <- as.numeric(df.final$FAM)/as.numeric(df.final$ROX)
+    df.final$Y <- as.numeric(df.final$VIC)/as.numeric(df.final$ROX)
+    
+    df.final$Project <- proj.number
+    df.placeholder <- df.final
+    
+    #save the trimmed/neat version. also: row.names=F is heaven.
+    
+    #######
+    #######
+    {
+      well.list <- sort(unique(df.final$MasterWell))
+      snp.list <- unique(df.final$SNPID)
+      snp.list <- snp.list[!is.na(snp.list)]
+      plate.list <- unique(df.final$MasterPlate)
+      uncalled <- c("?:?", "NTC", "", "Over", "DUPE", "Uncallable")
+    }
+    #######
+    #######
+    
+    ######
+    ######add'l columns
+    ######
+    {
+      #I remove anything that's not called
+      #for some reason it was pulling in samples where the snpid was NA, so i EXPLICITLY removed those
+      
+      df.final$x.mean <- NA
+      df.final$y.mean <- NA
+      df.final$distance <- NA
+      
+      df.final <- df.final[,-c(6:8)]
+      
+      
+      #these are for testing
+      df.final$x.norm <- NA
+      df.final$y.norm <- NA
+      df.final$distance.norm <- NA
+      
+      df.called <- df.final[!df.final$Call %in% uncalled,]
+      df.uncalled <- df.final[df.final$Call %in% uncalled,]
+      df.called <- df.called[!is.na(df.called$SNPID),]
+      
+      
+      
+      subset.called.platelist <- sort(unique(df.called$DaughterPlate))
+      for(h in 1:length(subset.called.platelist)){
+  #      print(paste("Array #", h, "of", length(subset.called.platelist)))
+        #subsetting master DF for each plate
+        subset.temp.plate <- df.called[df.called$DaughterPlate == subset.called.platelist[h],]
+        #setting up subsetting for each GT/snp
+        subset.called.snplist <- unique(subset.temp.plate$SNPID)
+        for (i in 1:length(subset.called.snplist)){
+          #print(paste("SNP #",i))
+          #subsetting master DF for each snp
+          subset.temp <- subset.temp.plate[subset.temp.plate$SNPID == subset.called.snplist[i],]
+          #setting up subsetting for each GT/snp
+          subset.called.calls <- unique(subset.temp$Call)
+          for(j in 1:length(subset.called.calls)){
+            #temporary dataframe for each genotype
+            subset.temp.calls <- subset.temp[subset.temp$Call == subset.called.calls[j],]
+            #x/y averages because I'm too dumb to do it any other way, the forced as numeric thing is sure something
+            subset.temp.calls$x.mean <- mean(as.numeric(subset.temp.calls$X))
+            subset.temp.calls$X <- as.numeric(subset.temp.calls$X)
+            subset.temp.calls$y.mean <- mean(as.numeric(subset.temp.calls$Y))
+            subset.temp.calls$Y <- as.numeric(subset.temp.calls$Y)
+            #distance between each sample and the center of each cluster
+            subset.temp.calls$distance <- with(subset.temp.calls,distance.func(X,x.mean, Y, y.mean))
+            #reading those distances back into the master DF
+            subset.temp[subset.temp$SNPID == subset.called.snplist[i] & subset.temp$Call == subset.called.calls[j],11:13] <- subset.temp.calls[,11:13]
+            df.called[df.called$DaughterPlate == subset.called.platelist[h] & df.called$SNPID == subset.called.snplist[i] & df.called$Call == subset.called.calls[j],11:13] <- subset.temp.calls[,11:13]
+          } #determine center for each GT
+          subset.temp$x.norm <- as.numeric(subset.temp$X)/(subset.temp$x.mean)
+          subset.temp$y.norm <- as.numeric(subset.temp$Y)/(subset.temp$y.mean)
+          subset.temp$distance.norm <- with(subset.temp,distance.func(x.norm,x.mean, y.norm, y.mean))
+          
+          df.called[df.called$DaughterPlate == subset.called.platelist[h] & df.called$SNPID == subset.called.snplist[i], 14:16] <- subset.temp[,14:16]
+        } #at the end of this you have the table with xmean, ymean, distance columns 
+        df.master.list <- df.called
+      }
+    }
+    ######
+    ######add'l columns
+    ######
+      plate.table <- data.frame(matrix(NA, nrow = length(plate.list), ncol = 7))
+      colnames(plate.table) <- c("plate BC", "% failed", "average distance", "normalized distance", "project(s)", "sd", "platform")
+      plate.table$`plate BC` <- plate.list
+    
+    for(z in 1:length(plate.list)){
+      loop.df.subset <- df.final[df.final$MasterPlate == plate.list[z],]
+      loop.df.subset.qqc <- df.master.list[df.master.list$MasterPlate == plate.list[z],]
+        if(dim(loop.df.subset.qqc)[1] != 0){
+          plate.table[z,2] <- 100*as.numeric(length(loop.df.subset$Call[loop.df.subset$Call %in% uncalled])/length(loop.df.subset$MasterPlate))
+          plate.table[z,3] <- as.numeric(mean(loop.df.subset.qqc$distance, na.rm = T))
+          plate.table[z,4] <- as.numeric(mean(loop.df.subset.qqc$distance.norm, na.rm = T))
+          plate.table[z,5] <- unique(loop.df.subset.qqc$Project)
+          plate.table[z,5] <- unique(loop.df.subset.qqc$Project)
+          plate.table[z,6] <- sd(loop.df.subset.qqc$distance, na.rm = T)
+        } else { plate.table[z,2:5] <- NA}
+      plate.table[z,7] <- "Perseus"
+    }
+    
+    if(a == 1){
+      ongoing.plate.table <- plate.table
+    }else{ongoing.plate.table <- rbind(ongoing.plate.table, plate.table)}
+    
+    #  df.final <- rbind(df.called, df.uncalled)
+    
+    unformatted.file <- sub(".csv", "", file.list[a])
+    filename <- paste("plates", unformatted.file, sep = ".", "csv")
+    write.csv(plate.table, file = file.path(path_out, filename), row.names = F)
+    print(paste("Perseus: completed", a, "of", length(file.list)))
+  } #file writing
+} else {print("no Perseus NGF")} #if there are perseus files, run. if not, don't.
+
+#getwd()
+#setwd("L:/DT/R/NGF/FG tightness/bulk/plate.table")
+
+#kraken:
+file.list <- source.file.list[grepl("Genotyping", source.file.list)]
+file.list <- file.list[!grepl("Genotyping_KP",file.list)] 
+
+if(length(file.list) !=0) {
+  
+  if(!dir.exists("./plate.table")) {dir.create("./plate.table")}
+  path_out <- "./plate.table"
+  
+  for(a in 1:length(file.list)){
+    ##for some reason dublin exports were being treated strangely, so adding in header = F tricked it into working?
+    working.file <- read.table(file = file.list[a], fill = T, header = F)
+    #start new df from appropriate location
+    
+    proj.number <- as.numeric(substr(working.file[6,2],9, nchar(working.file[6,2])-1))
+      if(is.na(proj.number)){proj.number <- as.numeric(substr(working.file[5,2],9, nchar(working.file[5,2])-1))}
+    
+    
+    df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1])
+    
+    #reformat df with appropriate headers
+    df.final <- separate(data = df.working.file, col = 1, sep = "\\,",
+                         into = c("DaughterPlate","MasterPlate","MasterWell","Call","X","Y","SNPID","SubjectID",
+                                  "Norm","Carrier","DaughterWell", "LongID", "AliquotID"))
+    
+    df.final$Project <- proj.number
+    
+    #save the trimmed/neat version. also: row.names=F is heaven.
+    
+    #######
+    #######
+    {
+      well.list <- sort(unique(df.final$DaughterWell))
+      snp.list <- unique(df.final$SNPID)
+      snp.list <- snp.list[!is.na(snp.list)]
+      plate.list <- unique(df.final$MasterPlate)
+      uncalled <- c("?", "NTC", "", "Over", "DUPE", "Uncallable")
+    }
+    #######
+    #######
+    
+    ######
+    ######add'l columns
+    ######
+    {
+      #I remove anything that's not called
+      #for some reason it was pulling in samples where the snpid was NA, so i EXPLICITLY removed those
+      
+      df.final$x.mean <- NA
+      df.final$y.mean <- NA
+      df.final$distance <- NA
+      
+      
+      #these are for testing
+      df.final$x.norm <- NA
+      df.final$y.norm <- NA
+      df.final$distance.norm <- NA
+      
+      df.called <- df.final[!df.final$Call %in% uncalled,]
+      df.uncalled <- df.final[df.final$Call %in% uncalled,]
+      df.called <- df.called[!is.na(df.called$SNPID),]
+      
+      
+      
+      subset.called.platelist <- unique(df.called$DaughterPlate)
+      for(h in 1:length(subset.called.platelist)){
+  #      print(paste("Array #", h, "of", length(subset.called.platelist)))
+        #subsetting master DF for each plate
+        subset.temp.plate <- df.called[df.called$DaughterPlate == subset.called.platelist[h],]
+        #setting up subsetting for each GT/snp
+        subset.called.snplist <- unique(subset.temp.plate$SNPID)
+        for (i in 1:length(subset.called.snplist)){
+          #print(paste("SNP #",i))
+          #subsetting master DF for each snp
+          subset.temp <- subset.temp.plate[subset.temp.plate$SNPID == subset.called.snplist[i],]
+          #setting up subsetting for each GT/snp
+          subset.called.calls <- unique(subset.temp$Call)
+          for(j in 1:length(subset.called.calls)){
+            #temporary dataframe for each genotype
+            subset.temp.calls <- subset.temp[subset.temp$Call == subset.called.calls[j],]
+            #x/y averages because I'm too dumb to do it any other way, the forced as numeric thing is sure something
+            subset.temp.calls$x.mean <- mean(as.numeric(subset.temp.calls$X))
+            subset.temp.calls$X <- as.numeric(subset.temp.calls$X)
+            subset.temp.calls$y.mean <- mean(as.numeric(subset.temp.calls$Y))
+            subset.temp.calls$Y <- as.numeric(subset.temp.calls$Y)
+            #distance between each sample and the center of each cluster
+            subset.temp.calls$distance <- with(subset.temp.calls,distance.func(X,x.mean, Y, y.mean))
+            #reading those distances back into the master DF
+            subset.temp[subset.temp$SNPID == subset.called.snplist[i] & subset.temp$Call == subset.called.calls[j],10:17] <- subset.temp.calls[,10:17]
+            df.called[df.called$DaughterPlate == subset.called.platelist[h] & df.called$SNPID == subset.called.snplist[i] & df.called$Call == subset.called.calls[j],10:17] <- subset.temp.calls[,10:17]
+          } #determine center for each GT
+          subset.temp$x.norm <- as.numeric(subset.temp$X)/(subset.temp$x.mean)
+          subset.temp$y.norm <- as.numeric(subset.temp$Y)/(subset.temp$y.mean)
+          subset.temp$distance.norm <- with(subset.temp,distance.func(x.norm,x.mean, y.norm, y.mean))
+          df.called[df.called$DaughterPlate == subset.called.platelist[h] & df.called$SNPID == subset.called.snplist[i], 18:20] <- subset.temp[,18:20]
+        } #at the end of this you have the table with xmean, ymean, distance columns 
+        df.master.list <- df.called
+      }
+    }
+    ######
+    ######add'l columns
+    ######
+    plate.table <- data.frame(matrix(NA, nrow = length(plate.list), ncol = 7))
+    colnames(plate.table) <- c("plate BC", "% failed", "average distance", "normalized distance", "project(s)", "sd", "platform")
+    plate.table$`plate BC` <- plate.list
+    
+    for(z in 1:length(plate.list)){
+      loop.df.subset <- df.final[df.final$MasterPlate == plate.list[z],]
+      loop.df.subset.qqc <- df.master.list[df.master.list$MasterPlate == plate.list[z],]
+        if(dim(loop.df.subset.qqc)[1] != 0){
+          plate.table[z,2] <- 100*as.numeric(length(loop.df.subset$Call[loop.df.subset$Call %in% uncalled])/length(loop.df.subset$MasterPlate))
+          plate.table[z,3] <- as.numeric(mean(loop.df.subset.qqc$distance, na.rm = T))
+          plate.table[z,4] <- as.numeric(mean(loop.df.subset.qqc$distance.norm, na.rm = T))
+          plate.table[z,5] <- unique(loop.df.subset.qqc$Project)
+          plate.table[z,6] <- sd(loop.df.subset.qqc$distance, na.rm = T)
+        } else { plate.table[z,2:5] <- NA}
+      plate.table[z,7] <- "Kraken"
+    }
+    
+#    if(a == 1){
+#      ongoing.plate.table <- plate.table
+#    }else{ongoing.plate.table <- rbind(ongoing.plate.table, plate.table)}
+    
+    filename <- paste("plates", file.list[a], sep = ".", "csv")
+    write.csv(plate.table, file = file.path(path_out, filename), row.names = F)
+    print(paste("Kraken: completed", a, "of", length(file.list)))
+    
+  } #this is for bulk unprocessed files
+} else {print("no Kraken NGF")} #if there are kraken files, run. if not, don't.
+```
+
+Point it to the table file directory, aggregates into one large file. 
+```{r agggregate plate files, message=FALSE, warning=FALSE}
+unformatted.file <- file.choose()
+directoryextractor.func(unformatted.file)
+source.file.list <- list.files()
+file.list <- source.file.list[grepl("plates.", source.file.list)]
+  
+for(i in 1:length(file.list)){
+  plate.table <- read.csv(file.list[i], )
+  if(i == 1){
+    ongoing.plate.table <- plate.table
+  }else{ongoing.plate.table <- rbind(ongoing.plate.table, plate.table)}
+  print(paste(i, "of", length(file.list), "plate table files aggregated"))
+}
+
+colnames(ongoing.plate.table) <- c("plate BC", "% failed", "average distance", "normalized distance", "project(s)", "sd", "platform")
+write.csv(ongoing.plate.table, file = file.path("bulk plate table.csv"), row.names = F)
+final.plate.table <- ongoing.plate.table
+```
+
+importing and matching to ID003
+```{r ID003 importing/formatting, echo=FALSE, warning=FALSE}
+ID003.filepath <- file.choose()
+path.file <- ID003.filepath
+plate.table <- final.plate.table
+
+correct.names <- c("cust", "PlateID", "lysed.inits", "lysed.dates", "Inc.temp", "reag.pro", 
+                   "lysis.buff", "clean.inits", "clean.dates", "reag.beads", "reag.buff", "reag.w1", "reag.w2", "reag.el", "Mags")
+
+###specific handling for identibead id003 data
+sheet.names <- readxl::excel_sheets(ID003.filepath)
+IDBD.names <- sheet.names[grepl("IDBD", sheet.names)]
+MGBD.names <- sheet.names[!grepl("IDBD", sheet.names)]
+  ID003.IDBD <- read.xlsx(xlsxFile = path.file, sheet = IDBD.names, cols = c(1:13), rows = c(3:100000))
+  colnames(ID003.IDBD) <- c("cust", "PlateID", "lysed.inits", "lysed.dates", "Inc.temp", "reag.pro", 
+                            "reag.tween", "clean.inits", "clean.dates", "reag.beads", "reag.etoh", "reag.mol.el", "Mags")
+
+##for magbead
+  for(i in 1:length(MGBD.names)){
+    if(i == 1){
+      ID003 <- read.xlsx(xlsxFile = path.file, sheet = MGBD.names[i], cols = c(1:15), rows = c(2:100000))
+      colnames(ID003) <- correct.names
+      ID003$spec.cust <- MGBD.names[i]
+    }else{
+      input.file <- read.xlsx(xlsxFile = path.file, sheet = MGBD.names[i], cols = c(1:15), rows = c(2:100000))
+      if(length(input.file) == 13){
+        colnames(input.file) <- c("cust", "PlateID", "lysed.inits", "lysed.dates", "reag.pro", 
+                                  "lysis.buff", "clean.inits", "clean.dates", "reag.beads", "reag.buff", "reag.w1", "reag.w2", "reag.el", "Mags")
+        input.file.temp <- input.file[,1:4]
+        input.file.temp$Inc.temp <- NA
+        input.file.temp <- cbind(input.file.temp, input.file[,5:14])
+        input.file <- input.file.temp
+        
+      }else{colnames(input.file) <- correct.names}
+      #colnames(input.file) <- correct.names
+      input.file$spec.cust <- MGBD.names[i]
+      ID003 <- rbind(ID003,input.file)
+    }
+  } #reading in the various tabs
+ 
+  
+  ID003$pass.rate <- 100-plate.table$`% failed`[match(ID003$PlateID, plate.table$`plate BC`, incomparables = NULL)]
+  ID003$dist <- plate.table$`average distance`[match(ID003$PlateID, plate.table$`plate BC`)]
+  ID003$dist.norm <- plate.table$`normalized distance`[match(ID003$PlateID, plate.table$`plate BC`)]
+  ID003$project <- plate.table$`project(s)`[match(ID003$PlateID, plate.table$`plate BC`, incomparables = NULL)]
+  ID003$chem <- "Mag mini"
+  
+  ID003.IDBD$pass.rate <- 100-plate.table$`% failed`[match(ID003.IDBD$PlateID, plate.table$`plate BC`, incomparables = NULL)]
+  ID003.IDBD$dist <- plate.table$`average distance`[match(ID003.IDBD$PlateID, plate.table$`plate BC`)]
+  ID003.IDBD$dist.norm <- plate.table$`normalized distance`[match(ID003.IDBD$PlateID, plate.table$`plate BC`)]
+  ID003.IDBD$project <- plate.table$`project(s)`[match(ID003.IDBD$PlateID, plate.table$`plate BC`, incomparables = NULL)]
+  ID003.IDBD$chem <- "IdentiBEAD"
+
+  # plate.table.IDBD <- plate.table[plate.table$`plate BC` %in% ID003.IDBD$PlateID,]
+  # plate.table.IDBD$chem <- "IDBD"
+  # plate.table.MM <- plate.table[plate.table$`plate BC` %in% ID003$PlateID,]
+  # plate.table.MM$chem <- "Mag mini"
+  # plate.table.new <- rbind(plate.table.MM, plate.table.IDBD)
+  # plate.table.new$pass.rate <- 100-plate.table.new$`% failed`
+  # plate.table$chem <- plate.table.new$chem[match(plate.table$`plate BC`, plate.table.new$`plate BC`)]
+  # plate.table$Mag <- ID003$Mag[match(plate.table$`plate BC`, ID003$PlateID)]
+  # plate.table$pass.rate <- 100-plate.table$`% failed`
+  # plate.table.magnet <- plate.table[!is.na(plate.table$Mag),]
+  # plate.table.magnet$Mag <- stri_reverse(plate.table.magnet$Mag)
+  
+    plate.table.IDBD <- plate.table[plate.table$`plate BC` %in% ID003.IDBD$PlateID,]
+    plate.table.IDBD$chem <- "IDBD"
+    plate.table.IDBD$Mag.orig <- ID003.IDBD$Mag[match(plate.table.IDBD$`plate BC`, ID003.IDBD$PlateID)]
+    plate.table.IDBD$clean.inits <- ID003.IDBD$clean.inits[match(plate.table.IDBD$`plate BC`, ID003.IDBD$PlateID)]
+    plate.table.IDBD$clean.date <- ID003.IDBD$clean.dates[match(plate.table.IDBD$`plate BC`, ID003.IDBD$PlateID)]
+    
+    plate.table.MM <- plate.table[plate.table$`plate BC` %in% ID003$PlateID,]
+    plate.table.MM$chem <- "Mag mini"
+    plate.table.MM$Mag.orig <- ID003$Mag[match(plate.table.MM$`plate BC`, ID003$PlateID)]
+    plate.table.MM$clean.inits <- ID003$clean.inits[match(plate.table.MM$`plate BC`, ID003$PlateID)]
+    plate.table.MM$clean.date <- ID003$clean.dates[match(plate.table.MM$`plate BC`, ID003$PlateID)]
+    
+    plate.table <- rbind(plate.table.MM, plate.table.IDBD)
+    plate.table$clean.date <- date.func(as.integer(plate.table$clean.date))
+    plate.table$pass.rate <- 100-plate.table$`% failed`
+    plate.table$Mag <- stri_reverse(plate.table$Mag.orig)
+    #plate.table$chem <- plate.table.new$chem[match(plate.table$`plate BC`, plate.table.new$`plate BC`)]
+    #plate.table$Mag <- ID003$Mag[match(plate.table$`plate BC`, ID003$PlateID)]
+    #plate.table$pass.rate <- 100-plate.table$`% failed`
+    plate.table.magnet <- plate.table[!is.na(plate.table$Mag.orig),]
+    plate.table.magnet$Mag <- stri_reverse(plate.table.magnet$Mag.orig)
+    
+    
+    plate.table.complete <- plate.table[!is.na(plate.table$chem),]
+    plate.table.complete <- plate.table.complete[!is.na(plate.table.complete$Mag),]
+    plate.table.complete <- plate.table.complete[!plate.table.complete$Mag %in% c("B1", "B2", "B3", "B4"),]
+  
+  #pruning
+  ID003.complete <- ID003[!is.na(ID003$pass.rate),]
+
+  ID003.complete <- ID003.complete[!is.na(ID003.complete$clean.inits),]
+  ID003.complete <- ID003.complete[!is.na(ID003.complete$reag.w1),]
+  
+  #uppercasing/reformatting
+  ID003.complete$lysed.inits <- toupper(ID003.complete$lysed.inits)
+  ID003.complete$Inc.temp <- toupper(ID003.complete$Inc.temp)
+  ID003.complete$clean.inits <- toupper(ID003.complete$clean.inits)
+  
+  ID003.complete$lysed.dates <- date.func(as.integer(ID003.complete$lysed.dates))
+  ID003.complete$clean.dates <- date.func(as.integer(ID003.complete$clean.dates))
+
+```
+
+visualization shit i guess idk. This is turning into a dumping ground for everything i can think of.
+```{r QC shit, echo=FALSE, message=FALSE, warning=FALSE}
+limit <- 10
+
+cust.tab <- table(ID003.complete$cust)
+cust.min <- as.numeric(sort(cust.tab[cust.tab>limit])[1])
+lysed.tab <- table(ID003.complete$lysed.inits)
+lysed.min <- as.numeric(sort(lysed.tab[lysed.tab>limit])[1])
+cleaned.tab <- table(ID003.complete$clean.inits)
+cleaned.min <- as.numeric(sort(cleaned.tab[cleaned.tab>limit])[1])
+reag.pro.tab <- table(ID003.complete$reag.pro)
+reag.pro.min <- as.numeric(sort(reag.pro.tab[reag.pro.tab>limit])[1])
+lysis.buff.tab <- table(ID003.complete$lysis.buff)
+lysis.buff.min <- as.numeric(sort(lysis.buff.tab[lysis.buff.tab>limit])[1])
+reag.beads.tab <- table(ID003.complete$reag.beads)
+reag.beads.min <- as.numeric(sort(reag.beads.tab[reag.beads.tab>limit])[1])
+reag.buff.tab <- table(ID003.complete$reag.buff)
+reag.buff.min <- as.numeric(sort(reag.buff.tab[reag.buff.tab>limit])[1])
+reag.w1.tab <- table(ID003.complete$reag.w1)
+reag.w1.min <- as.numeric(sort(reag.w1.tab[reag.w1.tab>limit])[1])
+reag.w2.tab <- table(ID003.complete$reag.w2)
+reag.w2.min <- as.numeric(sort(reag.w2.tab[reag.w2.tab>limit])[1])
+reag.el.tab <- table(ID003.complete$reag.el)
+reag.el.min <- as.numeric(sort(reag.el.tab[reag.el.tab>limit])[1])
+
+cust.unique <- names(cust.tab[cust.tab>limit])
+clean.inits.unique <- names(cleaned.tab[cleaned.tab>limit])
+lysed.inits.unique <- names(lysed.tab[lysed.tab>limit])
+reag.pro.unique <- names(reag.pro.tab[reag.pro.tab>limit])
+lysis.buff.unique <- names(lysis.buff.tab[lysis.buff.tab>limit])
+reag.beads.unique <- names(reag.beads.tab[reag.beads.tab>limit])
+reag.buff.unique <- names(reag.buff.tab[reag.buff.tab>limit])
+reag.w1.unique <- names(reag.w1.tab[reag.w1.tab>limit])
+reag.w2.unique <- names(reag.w2.tab[reag.w2.tab>limit])
+reag.el.unique <- names(reag.el.tab[reag.el.tab>limit])
+
+
+for(i in 1:length(clean.inits.unique)){
+  if(i == 1){df.compar.clean <- ID003.complete[sample(which(ID003.complete$clean.inits == clean.inits.unique[i]),cleaned.min),]}
+  else{df.compar.clean <- rbind(df.compar.clean, ID003.complete[sample(which(ID003.complete$clean.inits == clean.inits.unique[i]), cleaned.min),])}
+}
+for(i in 1:length(lysed.inits.unique)){
+  if(i == 1){df.compar.lysed <- ID003.complete[sample(which(ID003.complete$lysed.inits == lysed.inits.unique[i]),lysed.min),]}
+  else{df.compar.lysed <- rbind(df.compar.lysed, ID003.complete[sample(which(ID003.complete$lysed.inits == lysed.inits.unique[i]), lysed.min),])}
+}
+for(i in 1:length(reag.pro.unique)){
+  if(i == 1){df.compar.pro <- ID003.complete[sample(which(ID003.complete$reag.pro == reag.pro.unique[i]),reag.pro.min),]}
+  else{df.compar.pro <- rbind(df.compar.pro, ID003.complete[sample(which(ID003.complete$reag.pro == reag.pro.unique[i]),reag.pro.min),])}
+}
+for(i in 1:length(lysis.buff.unique)){
+  if(i == 1){df.compar.lysis.buff <- ID003.complete[sample(which(ID003.complete$lysis.buff == lysis.buff.unique[i]),lysis.buff.min),]}
+  else{df.compar.lysis.buff <- rbind(df.compar.lysis.buff, ID003.complete[sample(which(ID003.complete$lysis.buff == lysis.buff.unique[i]),lysis.buff.min),])}
+}
+for(i in 1:length(reag.beads.unique)){
+  if(i == 1){df.compar.reag.beads <- ID003.complete[sample(which(ID003.complete$reag.beads == reag.beads.unique[i]),reag.beads.min),]}
+  else{df.compar.reag.beads <- rbind(df.compar.reag.beads, ID003.complete[sample(which(ID003.complete$reag.beads == reag.beads.unique[i]),reag.beads.min),])}
+}
+for(i in 1:length(reag.buff.unique)){
+  if(i == 1){df.compar.reag.buff <- ID003.complete[sample(which(ID003.complete$reag.buff == reag.buff.unique[i]),reag.buff.min),]}
+  else{df.compar.reag.buff <- rbind(df.compar.reag.buff, ID003.complete[sample(which(ID003.complete$reag.buff == reag.buff.unique[i]),reag.buff.min),])}
+}
+for(i in 1:length(reag.w1.unique)){
+  if(i == 1){df.compar.reag.w1 <- ID003.complete[sample(which(ID003.complete$reag.w1 == reag.w1.unique[i]),reag.w1.min),]}
+  else{df.compar.reag.w1 <- rbind(df.compar.reag.w1, ID003.complete[sample(which(ID003.complete$reag.w1 == reag.w1.unique[i]),reag.w1.min),])}
+}
+for(i in 1:length(reag.w2.unique)){
+  if(i == 1){df.compar.reag.w2 <- ID003.complete[sample(which(ID003.complete$reag.w2 == reag.w2.unique[i]),reag.w2.min),]}
+  else{df.compar.reag.w2 <- rbind(df.compar.reag.w2, ID003.complete[sample(which(ID003.complete$reag.w2 == reag.w2.unique[i]),reag.w2.min),])}
+}
+for(i in 1:length(reag.el.unique)){
+  if(i == 1){df.compar.reag.el <- ID003.complete[sample(which(ID003.complete$reag.el == reag.el.unique[i]),reag.el.min),]}
+  else{df.compar.reag.el <- rbind(df.compar.reag.el, ID003.complete[sample(which(ID003.complete$reag.el == reag.el.unique[i]),reag.el.min),])}
+}
+
+ID003.cleaned <- ID003.complete[ID003.complete$lysed.inits %in% lysed.inits.unique,]
+ID003.cleaned <- ID003.cleaned[ID003.cleaned$clean.inits %in% clean.inits.unique,]
+ID003.cleaned <- ID003.cleaned[ID003.cleaned$reag.pro %in% reag.pro.unique,]
+ID003.cleaned <- ID003.cleaned[ID003.cleaned$lysis.buff %in% lysis.buff.unique,]
+ID003.cleaned <- ID003.cleaned[ID003.cleaned$reag.beads %in% reag.beads.unique,]
+ID003.cleaned <- ID003.cleaned[ID003.cleaned$reag.buff %in% reag.buff.unique,]
+ID003.cleaned <- ID003.cleaned[ID003.cleaned$reag.w1 %in% reag.w1.unique,]
+ID003.cleaned <- ID003.cleaned[ID003.cleaned$reag.w2 %in% reag.w2.unique,]
+ID003.cleaned <- ID003.cleaned[ID003.cleaned$reag.el %in% reag.el.unique,]
+
+#specific for each var:
+ID003.cleaned.cust <- ID003.complete[ID003.complete$cust %in% cust.unique,]
+ID003.cleaned.lysed.inits <- ID003.complete[ID003.complete$lysed.inits %in% lysed.inits.unique,]
+ID003.cleaned.clean.inits <- ID003.complete[ID003.complete$clean.inits %in% clean.inits.unique,]
+ID003.cleaned.reag.pro <- ID003.complete[ID003.complete$reag.pro %in% reag.pro.unique,]
+  for(i in 1:length(reag.pro.unique)){
+  ID003.cleaned.reag.pro$reag.pro[ID003.cleaned.reag.pro$reag.pro == reag.pro.unique[i]] <- rename.func(reag.pro.unique[i])
+} #renames pro reag lot
+ID003.cleaned.lysis.buff <- ID003.complete[ID003.complete$lysis.buff %in% lysis.buff.unique,]
+  for(i in 1:length(lysis.buff.unique)){
+  ID003.cleaned.lysis.buff$lysis.buff[ID003.cleaned.lysis.buff$lysis.buff == lysis.buff.unique[i]] <- rename.func(lysis.buff.unique[i])
+} #renames lysis buff lot
+ID003.cleaned.reag.beads <- ID003.complete[ID003.complete$reag.beads %in% reag.beads.unique,]
+ID003.cleaned.reag.buff <- ID003.complete[ID003.complete$reag.buff %in% reag.buff.unique,]
+ID003.cleaned.reag.w1 <- ID003.complete[ID003.complete$reag.w1 %in% reag.w1.unique,]
+  for(i in 1:length(reag.w1.unique)){
+  ID003.cleaned.reag.w1$reag.w1[ID003.cleaned.reag.w1$reag.w1 == reag.w1.unique[i]] <- rename.func(reag.w1.unique[i])
+} #renames w1 reag lot
+ID003.cleaned.reag.w2 <- ID003.complete[ID003.complete$reag.w2 %in% reag.w2.unique,]
+  for(i in 1:length(reag.w2.unique)){
+  ID003.cleaned.reag.w2$reag.w2[ID003.cleaned.reag.w2$reag.w2 == reag.w2.unique[i]] <- rename.func(reag.w2.unique[i])
+} #renames w2 reag lot
+ID003.cleaned.reag.el <- ID003.complete[ID003.complete$reag.el %in% reag.el.unique,]
+  for(i in 1:length(reag.el.unique)){
+  ID003.cleaned.reag.el$reag.el[ID003.cleaned.reag.el$reag.el == reag.el.unique[i]] <- rename.func(reag.el.unique[i])
+} #renames el reag lot
+
+ID003.merged <- rbind(ID003.cleaned.clean.inits,ID003.cleaned.lysed.inits,ID003.cleaned.lysis.buff,ID003.cleaned.reag.beads,
+                        ID003.cleaned.reag.buff,ID003.cleaned.reag.el,ID003.cleaned.reag.pro, ID003.cleaned.reag.w1, ID003.cleaned.reag.w2)
+##########
+##########std vars
+##########
+
+
+
+##########
+##########std plots
+##########
+ggplot(plate.table, aes(x = factor(clean.date), y = pass.rate, fill = factor(chem))) + 
+    geom_boxplot() +
+    theme(plot.title = element_text(hjust = 0.5), legend.position = "none", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+    facet_grid(rows = factor(plate.table$chem))
+
+  ggplot(plate.table, aes(x = factor(platform), y = pass.rate, fill = factor(platform))) + 
+    geom_boxplot()
+  ggplot(plate.table, aes(x = factor(platform), y = `average distance`, fill = factor(platform))) + 
+    geom_boxplot()
+  ggplot(plate.table, aes(x = factor(platform), y = `sd`, fill = factor(platform))) + 
+    geom_boxplot()
+  
+  hist(plate.table$pass.rate~plate.table$platform)
+    ggplot(plate.table, aes(x = factor(chem), y = pass.rate)) + 
+    geom_boxplot()
+  ggplot(plate.table, aes(x = factor(chem), y = pass.rate, fill = factor(platform))) + 
+    geom_boxplot()
+  ggplot(plate.table, aes(x = factor(chem), y = `average distance`, fill = factor(platform))) + 
+    geom_boxplot()
+  ggplot(plate.table, aes(x = factor(chem), y = `normalized distance`, fill = factor(platform))) + 
+    geom_boxplot()
+  
+  hist(plate.table$pass.rate~plate.table$chem)
+  #hist(plate.table$pass.rate~plate.table$chem*plate.table$clean.inits)
+  
+  #describeBy(pass.rate~clean.inits + chem, data = plate.table, mat = T)
+  
+  # 
+  # wilcox.test(plate.table.complete$pass.rate[plate.table.complete$chem == "Mag mini"], plate.table.complete$pass.rate[plate.table.complete$chem == "IDBD"]); describeBy(plate.table.complete$pass.rate, group = plate.table.complete$chem); 
+  # 
+  #   wilcox.test(plate.table.complete$pass.rate[plate.table.complete$platform == "Kraken"], plate.table.complete$pass.rate[plate.table.complete$platform == "Perseus"]); describeBy(plate.table.complete$pass.rate, group = plate.table.complete$platform); 
+  # 
+
+
+  
+  ggplot(plate.table.complete, aes(x = factor(Mag), y = pass.rate, fill = factor(Mag))) + 
+    geom_boxplot() +
+    facet_grid(rows = factor(plate.table.complete$chem))
+  # 
+  # ggplot(plate.table.magnet, aes(x = factor(Mag), y = `average distance`, fill = factor(Mag))) + 
+  #   geom_boxplot() +
+  #   facet_grid(rows = factor(plate.table.magnet$chem))
+  # 
+  # ggplot(plate.table.magnet, aes(x = factor(Mag), y = `normalized distance`, fill = factor(Mag))) + 
+  #   geom_boxplot() +
+  #   facet_grid(rows = factor(plate.table.magnet$chem))
+
+
+  ggplot(df.compar.clean, aes(x = factor(clean.inits), y = pass.rate, fill = factor(clean.inits))) + 
+    #scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+    ggtitle("Cleaning performance", ) + 
+    xlab("Initials") + 
+    ylab("Plate pass rate") +
+#    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.1)) +
+    theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+  
+  ggplot(df.compar.lysed, aes(x = factor(lysed.inits), y = pass.rate, fill = factor(lysed.inits))) + 
+#    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+#    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(df.compar.pro, aes(x = factor(reag.pro), y = pass.rate, fill = factor(reag.pro))) + 
+#    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+#    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(df.compar.lysis.buff, aes(x = factor(lysis.buff), y = pass.rate, fill = factor(lysis.buff))) + 
+#    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+#    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(df.compar.reag.beads, aes(x = factor(reag.beads), y = pass.rate, fill = factor(reag.beads))) + 
+    ggtitle("Pass rate by binding bead lot", ) + 
+#    xlab("Binding bead reagent lot") + 
+    ylab("Plate pass rate") +
+    guides(fill=guide_legend(title = "Lot"),
+           legend.position = "center") +
+    geom_boxplot() +
+#    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    #theme(legend.position = "none", axis.title.x = element_text(angle = 90))
+    theme(axis.ticks.x = element_blank(),
+          axis.text.x=element_blank(),
+          axis.title.x = element_blank(), 
+          legend.title.align=0.5,
+          plot.title = element_text(hjust = 0.5))
+  
+  #ggplot(df.compar.reag.w1, aes(x = factor(reag.w1), y = pass.rate, fill = factor(reag.w1))) +
+    ggplot(ID003.cleaned.reag.w1, aes(x = factor(reag.w1), y = pass.rate, fill = factor(reag.w1))) + 
+#    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+#    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(df.compar.reag.w2, aes(x = factor(reag.w2), y = pass.rate, fill = factor(reag.w2))) + 
+#    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+#    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(df.compar.reag.el, aes(x = factor(reag.el), y = pass.rate, fill = factor(reag.el))) + 
+#    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+#    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+
+##########
+##########std plots
+##########
+
+##########
+##########renamed lot plot
+##########
+
+  ggplot(ID003.cleaned, aes(x = factor(clean.inits), y = pass.rate, fill = factor(clean.inits))) + 
+    #scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+    ggtitle("Cleaning performance", ) + 
+    xlab("Initials") + 
+    ylab("Plate pass rate") +
+    #    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.1)) +
+    theme(plot.title = element_text(hjust = 0.5), legend.position = "none")
+  
+  ggplot(ID003.cleaned.lysed.inits, aes(x = factor(lysed.inits), y = pass.rate, fill = factor(lysed.inits))) + 
+    #    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+    #    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(ID003.cleaned.reag.pro, aes(x = factor(reag.pro), y = pass.rate, fill = factor(reag.pro))) + 
+    #    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+    #    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(ID003.cleaned.lysis.buff, aes(x = factor(lysis.buff), y = pass.rate, fill = factor(lysis.buff))) + 
+    #    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+    #    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(ID003.cleaned.reag.beads, aes(x = factor(reag.beads), y = pass.rate, fill = factor(reag.beads))) + 
+    ggtitle("Pass rate of lots of binding beads", ) + 
+    #    xlab("Binding bead reagent lot") + 
+    ylab("Plate pass rate") +
+    guides(fill=guide_legend(title = "Lot"),
+           legend.position = "center") +
+    geom_boxplot() +
+    #    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    #theme(legend.position = "none", axis.title.x = element_text(angle = 90))
+    theme(axis.ticks.x = element_blank(),
+          axis.text.x=element_blank(),
+          axis.title.x = element_blank(), 
+          legend.title.align=0.5,
+          plot.title = element_text(hjust = 0.5))
+  
+  ggplot(ID003.cleaned.reag.w1, aes(x = factor(reag.w1), y = pass.rate, fill = factor(reag.w1))) +
+    #ggplot(ID003.cleaned.reag.w1, aes(x = factor(reag.w1), y = dist.norm, fill = factor(reag.w1))) + 
+    #    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+    #    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(ID003.cleaned.reag.w2, aes(x = factor(reag.w2), y = pass.rate, fill = factor(reag.w2))) + 
+    #    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+    #    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+  
+  ggplot(ID003.cleaned.reag.el, aes(x = factor(reag.el), y = pass.rate, fill = factor(reag.el))) + 
+    #    scale_fill_brewer(palette="Set3") + 
+    geom_boxplot() +
+    #    stat_summary(fun.data = n_fun, geom = "text", position = position_dodge(width = 0.75)) +
+    theme(legend.position = "none")
+
+##########
+##########renamed lot plot
+##########
+
+
+
+ggplot(ID003.cleaned.reag.beads, aes(x = factor(clean.dates), y = pass.rate, fill = factor(reag.beads))) +
+  scale_fill_brewer(palette="Set3") +
+  ggtitle("Data quality over time", ) + 
+  ylab("Plate pass rate") +
+  geom_boxplot() +
+  guides(fill=guide_legend(title = "Binding Bead Lot"),
+         legend.position = "center") +
+  theme(axis.ticks.x = element_blank(),
+        axis.text.x=element_blank(),
+        axis.title.x = element_blank(), 
+        legend.title.align=0.5,
+        plot.title = element_text(hjust = 0.5))
+
+ggplot(ID003.cleaned.clean.inits, aes(x = factor(clean.dates), y = pass.rate, fill = factor(clean.inits))) +
+  scale_fill_brewer(palette="Set3") +
+  geom_boxplot() +
+  facet_grid(rows = factor(ID003.cleaned.clean.inits$clean.inits)) +
+  theme(strip.text.y = element_text(size = 8, angle = 0))
+
+ggplot(ID003.cleaned.reag.pro, aes(x = factor(clean.dates), y = pass.rate, fill = factor(reag.pro))) + 
+  geom_boxplot()
+
+ggplot(ID003.cleaned.reag.w1, aes(x = factor(clean.dates), y = pass.rate, fill = factor(reag.w1))) + 
+  geom_boxplot()
+
+ggplot(ID003.cleaned.clean.inits, aes(x = factor(clean.dates), y = pass.rate, fill = factor(clean.inits))) + geom_boxplot()
+
+#ggplot(ID003.complete[which(ID003.complete$spec.cust %in% spec.cust[1:3]),], aes(x = factor(clean.dates), y = pass.rate, fill = factor(spec.cust))) +
+# this is for pulling tyson pork OUT. 1:4 only includes main 4 (pork included), 1:3 excludes pork
+# ID003.complete <- ID003.complete[!ID003.complete$spec.cust == "R&D",]
+# ID003.complete <- ID003.complete[!is.na(ID003.complete$clean.dates),]
+# ID003.complete$spec.cust[ID003.complete$spec.cust=="Misc."] <- "Swiss"
+  #mag.pca.plate.table$agowa[mag.pca.plate.table$mag %in% c("1D","3D")] <- "1 & 3" 
+ggplot(ID003.complete, aes(x = factor(clean.dates), y = pass.rate, fill = factor(spec.cust))) + 
+  ggtitle("Masterplate data quality over time", ) + 
+  xlab("Date") + 
+  ylab("Plate call rate") +
+#  theme(plot.title = element_text(hjust = 0.5), legend.position = "none", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  guides(fill=guide_legend(title = "Customer"),
+         legend.position = "center") +
+  theme(plot.title = element_text(hjust = 0.5), axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+  geom_boxplot()
+
+##by job
+
+cust.unique.list <- unique(ID003.cleaned.cust$cust)
+ID003.cleaned.cust %>% mutate(name = fct_relevel(cust, cust.unique.list)) -> ID003.cleaned.cust
+  ggplot(ID003.cleaned.cust, aes(x = cust, y = pass.rate, fill = factor(clean.dates))) + 
+    ggtitle("Masterplate data quality by monthly job", ) + 
+    xlab("Job") + 
+    ylab("Plate call rate") +
+    theme(plot.title = element_text(hjust = 0.5), legend.position = "none", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
+    geom_boxplot()
+##by job
+
+ggplot(ID003.complete, aes(pass.rate)) + geom_histogram(binwidth = 0.5, color="blue", fill="white")
+ggplot(ID003.complete, aes(dist)) + geom_histogram(binwidth = 0.0025, color="black", fill="white")
+ggplot(ID003.complete, aes(dist.norm)) + geom_histogram(binwidth = 0.05, color="red", fill="white")
+
+
+```
+
+to do:
+??find way to compare ngf to plate files, don't run files multiple times
+  hard AF bruv
+  OR I can just delete new ones
+in ID003 chunk
+x  match clean inits into plate table
+x  match clean date into plate table
+  look at reagents in idbid
+x  find way to trim to most recent n months, plot
+  !!match jobs cleaned with both chems, compare graphically
+      should be ez enough, find unique between both docs, combine
+output
+  3 sections: weekly, monthly, YTD
+x      ID003.recent <- ID003.complete[Sys.Date() - ID003.complete$clean.dates < 100,]
+
+x      ID003.YTD <- ID003.complete[ID003.complete$clean.dates > "2024-01-01",]
+x      ID003.adaptive.YTD <- ID003.complete[ID003.complete$clean.dates > paste(year(Sys.Date()),"01", "01", sep = "-"),]
+x      plate.table.YTD <- plate.table[plate.table$clean.date  > paste(year(Sys.Date()),"01", "01", sep = "-"),] 
+x      plate.table.YTD <- plate.table.YTD[!is.na(plate.table.YTD$`plate BC`),]
+    BIG ones quarterly maybe?
+  tightness, call rate
+  look across reagents
+  friday afternoon output, save file with date
+
+```{r}
+
+```
+

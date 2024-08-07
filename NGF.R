@@ -1,7 +1,8 @@
 #I'm ultimately going to try to do something meaningful here. I think data quality across sisterplates is a reasonable start?
+#2019-12-17: i just deleted the unused stuff. I forced the trimmed file to be output into the desired directory. 
+  #Maybe i'll get the figs to start working now?
 
-NGF <- function(dir, plotbinary = 0){
-  setwd(dir)
+NGF <- function(plotbinary = 1){
 #necessary lib loading
   if (!require("data.table")) {
     install.packages("data.table", dependencies = TRUE); library(data.table)}
@@ -15,26 +16,31 @@ NGF <- function(dir, plotbinary = 0){
     install.packages("RColorBrewer", dependencies = TRUE); library(RColorBrewer)}
   if (!require("png")) {
     install.packages("png", dependencies = TRUE); library(png)}
+  directoryextractor.func <- function(selected.file){
+    filename.vector <- unlist(strsplit(selected.file,'\\\\', fixed = F))
+    filename <- filename.vector[length(filename.vector)]
+    setwd(substr(selected.file, 1, nchar(selected.file)-nchar(filename)))
+  }
+  right <- function(text, num_char) {
+    substr(text, nchar(text) - (num_char-1), nchar(text))
+  }
+  
+  target.file <- file.choose()
+  directoryextractor.func(target.file)
+  
 
-  #pick target file(s)
-  target.file <- list.files()
-  target.file <- target.file[1]; target.file
-  target.file.name <- sub(".csv", "", target.file)
+  #pick target file
+  target.file.name <- right(sub(".csv", "", target.file), 10)
   #pull in whole file, filling 
   working.file <- read.table(file = target.file, fill = T)
   #start new df from appropriate location
   
   
-  #testing?
-  # ifelse(dim(working.file)[2] == 3){
-  #   working.file <- read.table(file = target.file, fill = T, row.names = NULL); df.working.file <- data.frame(working.file[(match("Data",working.file[,1])+2):nrow(working.file),1]),
-  #   df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1])
-  # }
   if(dim(working.file)[2] == 3){
     working.file <- read.table(file = target.file, fill = T, row.names = NULL) 
   }
   
-  #df.working.file <- data.frame(working.file[(match("Data",working.file$V1)+2):nrow(working.file),1])
+  
   df.working.file <- data.frame(working.file[(match("Data",working.file[,1])+2):nrow(working.file),1])
   
   #turning off warnings pseudo-locally
@@ -106,7 +112,6 @@ NGF <- function(dir, plotbinary = 0){
     t.test(output.matrix[1,], output.matrix[2:15,]); t.test(output.matrix[16,], output.matrix[2:15,])
     t.test(output.matrix[1,], output.matrix[16,])
 
-    #par(mar = c(1, 1, 1, 1))
     par(mfrow=c(2,1))
     boxplot1 <- boxplot(output.matrix, ylab = "average failure rate", xlab = "column index", main = "average failure rate per column", col = "orange", xaxt = 'n')
     boxplot2 <- boxplot(t(output.matrix), ylab = "average failure rate", xlab = "row index", main = "average failure rate per row", col = "gold", xaxt = 'n')
@@ -121,9 +126,9 @@ NGF <- function(dir, plotbinary = 0){
   }
   
   #save the trimmed/neat version. also: row.names=F is heaven.
-  oldwd <- getwd()
-  setwd("L:/DT/R/NGF")
-  write.csv(df.final[,-c(9,10)], file = paste(sub("Genotyping", "Trimmed NGF", target.file.name),sep = "", ".csv"), row.names = F)
-  setwd(oldwd)
+  output <- "L:/DT/R/NGF/"
+  write.csv(df.final, file = paste(output, target.file.name, "Trimmed NGF", sep = " ", ".csv"), row.names = F)
   print("NGF file trimmed, placed in relevant directory thx GLHF")
 }
+
+

@@ -5,11 +5,13 @@
 
 
 #i'm defaulting here because this is where i'm spitting files out now
-setwd("L:/DT/R/NGF")
+setwd("L:/DT/R/NGF/2023/pork/cleaned files")
 library(gplots)
 
-#pick target file(s) - NEED TO BE UNFORMATTED
+#pick target file(s) - NEED TO BE FORMATTED
 git.file <- list.files()
+
+
 for(i in 1:length(git.file)){
   working.file <- read.csv(git.file[i], sep = ",")
   ifelse(
@@ -69,42 +71,31 @@ for(i in 1:length(git.file)){
     #print(100*signif(i/length(unique(data.rows)))) #this isn't useful but i'm scared to delete
   } #building the average table?
   
-  data.table[1:2,1:2] <- NA
+  
   
   #mean(data.table)
   
+  #head(data.table)
+  
+
   output.matrix <- 100*matrix(as.numeric(unlist(data.table)),nrow=nrow(data.table))
+  output.matrix[1:2,1:2] <- NA
   
   plate.pass.rate <- heatmap.2(x = output.matrix, Rowv = FALSE, Colv = FALSE, dendrogram = "none",
                              cellnote = signif(output.matrix,2), notecol = "black", notecex = 0.5,
                              trace = "none", key = FALSE, xlab = "Column", ylab = "row", 
-                             main = length(df.final$DaughterPlate), col = colorRampPalette(c("white", "red"))(150))
-  
+                             main = paste(length(unique(df.final$DaughterPlate)),"unique arrays"), col = colorRampPalette(c("white", "red"))(150))
+  #
+  #plot(ROX.mean.norm~output.matrix)
+  #
   par(mar = c(1, 1, 1, 1))
   par(mfrow=c(2,1))
   boxplot(output.matrix, ylab = "average failure rate", xlab = "column index", main = "average failure rate per column", col = "orange", xaxt = 'n')
   boxplot(t(output.matrix), ylab = "average failure rate", xlab = "row index", main = "average failure rate per row", col = "gold", xaxt = 'n')
-  
-  
-  t.test(output.matrix[1:2,], output.matrix[3:16,]); t.test(output.matrix[16,], output.matrix[2:15,])
-  t.test(output.matrix[1,], output.matrix[16,])
-  length(df.final$DaughterPlate)
-  mean(output.matrix)
-  
-  library(Hmisc)
-  
-  abc <- rcorr(output.matrix)
-  #abc <- matrix(as.numeric(unlist(abc)),nrow=nrow(abc))
 
-  #heatmap.2(x = abc)
-  
-  # #i could make the grid i'm dreaming of with a two nested for loops?
-  # a <- t.test(output.matrix[1:2,])
-  # a$p.value
-  # str(a)
   
   #save the trimmed/neat version. also: row.names=F is heaven.
   
   #write.csv(df.final[,-c(9,10)], file = paste("super bulk output", ".csv"), row.names = F)
   #I have no idea why I was using this. Col 9 is the sisterplate well location, which is absolutely necessary.
-  write.csv(df.final, file = paste("super bulk output of ",length(df.final$SubjectID), " compiled samples.csv"), row.names = F)
+  write.csv(df.final, file = paste("compiled bulk output of",length(unique(df.final$SubjectID)), " samples.csv"), row.names = F)

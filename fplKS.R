@@ -1,7 +1,7 @@
-fplKS <- function(a, initials){
+fplKS <- function(a, initials = "AL"){
 #rename duplicate samples across the two potential fields for duplication for killsheets
 #obligatories
-  vers <- "v_1.3" #I'M JUST STUPID AND FEEL BAD ABOUT MYSELF
+  vers <- "v 1.3" #I'M JUST STUPID AND FEEL BAD ABOUT MYSELF
 #1.1: only prints text if necessary, but still does everything because it's supposed to.
 #1.2: it was randomly creating duplicate barcodes, so i added a test before the renumbering.
   test <- read.csv(a, header = T, blank.lines.skip = T)
